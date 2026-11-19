@@ -1,0 +1,2829 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>360° Browser | CMMS Industrial & Integridad de Activos ISO Suite</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome 6.4.0 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            slate: {
+              850: '#151e2e',
+              900: '#0f172a',
+              950: '#090d16',
+            },
+            industrial: {
+              accent: '#0ea5e9',
+              amber: '#f59e0b',
+              emerald: '#10b981',
+              crimson: '#ef4444',
+              violet: '#8b5cf6',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Custom Scrollbar for Control Room UI */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+
+    /* Browser Tab Active Effect */
+    .browser-tab-active {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border-top: 2px solid #0ea5e9;
+      color: #f8fafc;
+    }
+    .browser-tab-inactive {
+      background: #090d16;
+      color: #94a3b8;
+      border-top: 2px solid transparent;
+    }
+    .browser-tab-inactive:hover {
+      background: #131b2e;
+      color: #e2e8f0;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-sky-500 selection:text-white overflow-x-hidden">
+
+  <!-- ==================== TOP 360 BROWSER CHROME BAR ==================== -->
+  <header class="sticky top-0 z-40 bg-slate-950 border-b border-slate-800 shadow-xl">
+    <!-- Window Title & System Status Bar -->
+    <div class="flex flex-wrap items-center justify-between px-3 py-1.5 bg-slate-950 border-b border-slate-900 text-xs">
+      <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+          <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
+          <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+        </div>
+        <div class="flex items-center gap-2 pl-2 border-l border-slate-800">
+          <i class="fa-solid fa-compass text-sky-400 text-sm"></i>
+          <span class="font-bold tracking-wider text-slate-200 uppercase">360° Browser</span>
+          <span class="hidden sm:inline-block px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/30 text-sky-400 font-mono text-[10px]">
+            CMMS & ISO ASSET INTEGRITY SUITE v4.2
+          </span>
+        </div>
+      </div>
+
+      <!-- Real-Time Control Room Clock & Storage Indicator -->
+      <div class="flex items-center gap-3 text-[11px] font-mono">
+        <span id="dbStatusBadge" class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+          <i class="fa-solid fa-database text-[10px]"></i> localStorage: Sincronizado (200 Vars)
+        </span>
+        <span class="hidden md:flex items-center gap-1.5 text-slate-400">
+          <i class="fa-regular fa-clock text-sky-400"></i>
+          <span id="liveClock">--/--/---- --:--:--</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- 360 Browser Tabs Strip -->
+    <div class="flex items-center overflow-x-auto bg-slate-950 px-2 pt-1.5 gap-1 border-b border-slate-800" id="browserTabsContainer">
+      <button onclick="switchTab('dashboard')" data-tab="dashboard" class="browser-tab browser-tab-active flex items-center gap-2 px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all">
+        <i class="fa-solid fa-gauge-high text-sky-400"></i>
+        <span>1. Centro de Mando 360°</span>
+      </button>
+      <button onclick="switchTab('taxonomy')" data-tab="taxonomy" class="browser-tab browser-tab-inactive flex items-center gap-2 px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all">
+        <i class="fa-solid fa-sitemap text-emerald-400"></i>
+        <span>2. Taxonomía ISO 14224 (7 Niveles)</span>
+      </button>
+      <button onclick="switchTab('cbm')" data-tab="cbm" class="browser-tab browser-tab-inactive flex items-center gap-2 px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all">
+        <i class="fa-solid fa-wave-square text-amber-400"></i>
+        <span>3. Monitoreo CBM & ISO 20816/4406</span>
+      </button>
+      <button onclick="switchTab('workorders')" data-tab="workorders" class="browser-tab browser-tab-inactive flex items-center gap-2 px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all">
+        <i class="fa-solid fa-screwdriver-wrench text-rose-400"></i>
+        <span>4. OTs, Fallas & Downtime (ISO 13306)</span>
+      </button>
+      <button onclick="switchTab('iso_compliance')" data-tab="iso_compliance" class="browser-tab browser-tab-inactive flex items-center gap-2 px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all">
+        <i class="fa-solid fa-shield-halved text-violet-400"></i>
+        <span>5. Normas ISO, Metrología & Barreras</span>
+      </button>
+      <button onclick="switchTab('dictionary')" data-tab="dictionary" class="browser-tab browser-tab-inactive flex items-center gap-2 px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all">
+        <i class="fa-solid fa-table-list text-cyan-400"></i>
+        <span>6. Diccionario 200 Vars & MRO</span>
+      </button>
+    </div>
+
+    <!-- 360 Browser Omnibox & Master Filters Bar -->
+    <div class="bg-slate-900 px-3 py-2 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2 border-b border-slate-800">
+      <!-- Navigation Arrows & Omnibox URL/Search -->
+      <div class="flex items-center gap-2 flex-1">
+        <div class="hidden sm:flex items-center gap-1">
+          <button onclick="navigateHistory(-1)" title="Atrás" class="p-2 rounded-lg bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-white transition">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+          </button>
+          <button onclick="navigateHistory(1)" title="Adelante" class="p-2 rounded-lg bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-white transition">
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+          <button onclick="renderAll()" title="Recargar Vista" class="p-2 rounded-lg bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-sky-400 transition">
+            <i class="fa-solid fa-rotate-right text-xs"></i>
+          </button>
+        </div>
+
+        <!-- Omnibox -->
+        <div class="relative flex-1 flex items-center bg-slate-950 border border-slate-700/80 focus-within:border-sky-500 rounded-xl px-3 py-1.5 shadow-inner">
+          <i class="fa-solid fa-lock text-emerald-400 text-xs mr-2" title="Entorno Offline-First Seguro"></i>
+          <span id="omniboxPath" class="hidden md:inline text-xs font-mono text-sky-400 mr-2 select-none">iso360://centro-mando/</span>
+          <input
+            type="text"
+            id="globalSearchInput"
+            oninput="handleGlobalFilterChange()"
+            placeholder="Buscar en 200 variables, tags (P-101A, DW-01), modos de falla (VIB, ELF), normas ISO..."
+            class="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+          />
+          <button onclick="clearGlobalFilters()" id="clearSearchBtn" class="hidden text-slate-400 hover:text-white ml-2 text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Master Cross-Filters: ISO Standard + Date Range + Backup Tools -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- ISO Master Filter -->
+        <div class="flex items-center bg-slate-950 border border-slate-700/80 rounded-xl px-2.5 py-1">
+          <i class="fa-solid fa-certificate text-amber-400 text-xs mr-1.5"></i>
+          <select id="masterIsoFilter" onchange="handleGlobalFilterChange()" class="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer">
+            <option value="ALL" class="bg-slate-900">Todas las Normas ISO (8)</option>
+            <option value="ISO 14224" class="bg-slate-900">ISO 14224 (Taxonomía & Fallas)</option>
+            <option value="ISO 13306" class="bg-slate-900">ISO 13306 / EN 15341 (Mtto & KPI)</option>
+            <option value="ISO 20816" class="bg-slate-900">ISO 10816 / 20816 (Vibraciones)</option>
+            <option value="ISO 4406" class="bg-slate-900">ISO 4406:2021 (Limpieza Aceite)</option>
+            <option value="ISO 3448" class="bg-slate-900">ISO 3448 (Viscosidad ISO VG)</option>
+            <option value="ISO/IEC 17025" class="bg-slate-900">ISO/IEC 17025 (Metrología)</option>
+            <option value="ISO 16530-1" class="bg-slate-900">ISO 16530-1 / NORSOK D-010</option>
+            <option value="ISO 55001" class="bg-slate-900">ISO 55000 / 55001 (Activos/MRO)</option>
+          </select>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div class="flex items-center gap-1 bg-slate-950 border border-slate-700/80 rounded-xl px-2.5 py-1 text-xs">
+          <i class="fa-regular fa-calendar text-sky-400"></i>
+          <input type="date" id="dateFromFilter" onchange="handleGlobalFilterChange()" title="Fecha Desde" class="bg-transparent text-slate-300 text-[11px] focus:outline-none w-26" />
+          <span class="text-slate-600">→</span>
+          <input type="date" id="dateToFilter" onchange="handleGlobalFilterChange()" title="Fecha Hasta" class="bg-transparent text-slate-300 text-[11px] focus:outline-none w-26" />
+        </div>
+
+        <!-- Backup / Restore / CSV / Reset Buttons -->
+        <div class="flex items-center gap-1">
+          <button onclick="exportJSON()" title="Exportar Respaldo JSON" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-sky-600 text-slate-200 hover:text-white text-xs font-medium transition flex items-center gap-1.5">
+            <i class="fa-solid fa-download"></i><span class="hidden xl:inline">JSON</span>
+          </button>
+          <label title="Importar Respaldo JSON" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white text-xs font-medium transition flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-upload"></i><span class="hidden xl:inline">Importar</span>
+            <input type="file" accept=".json" onchange="importJSON(event)" class="hidden" />
+          </label>
+          <button onclick="exportCSV()" title="Exportar Reporte CSV" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-amber-600 text-slate-200 hover:text-white text-xs font-medium transition flex items-center gap-1.5">
+            <i class="fa-solid fa-file-csv"></i><span class="hidden xl:inline">CSV</span>
+          </button>
+          <button onclick="promptResetSeed()" title="Restaurar Datos Semilla" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white text-xs font-medium transition">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ISO 14224 Interactive 7-Level Cascading Taxonomy Breadcrumb Bar -->
+    <div class="bg-slate-900/90 px-3 py-2 border-b border-slate-800 flex flex-wrap items-center gap-1.5 text-xs">
+      <span class="text-[11px] font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1 mr-1">
+        <i class="fa-solid fa-layer-group"></i> Taxonomía ISO 14224:
+      </span>
+      <select id="taxL1" onchange="onTaxSelect(1)" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:border-sky-500 focus:outline-none"></select>
+      <i class="fa-solid fa-chevron-right text-[9px] text-slate-600"></i>
+      <select id="taxL2" onchange="onTaxSelect(2)" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:border-sky-500 focus:outline-none"></select>
+      <i class="fa-solid fa-chevron-right text-[9px] text-slate-600"></i>
+      <select id="taxL3" onchange="onTaxSelect(3)" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:border-sky-500 focus:outline-none"></select>
+      <i class="fa-solid fa-chevron-right text-[9px] text-slate-600"></i>
+      <select id="taxL4" onchange="onTaxSelect(4)" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:border-sky-500 focus:outline-none"></select>
+      <i class="fa-solid fa-chevron-right text-[9px] text-slate-600"></i>
+      <select id="taxL5" onchange="onTaxSelect(5)" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-amber-300 font-semibold focus:border-sky-500 focus:outline-none"></select>
+      <i class="fa-solid fa-chevron-right text-[9px] text-slate-600"></i>
+      <select id="taxL6" onchange="onTaxSelect(6)" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:border-sky-500 focus:outline-none"></select>
+      <i class="fa-solid fa-chevron-right text-[9px] text-slate-600"></i>
+      <select id="taxL7" onchange="onTaxSelect(7)" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-emerald-300 font-semibold focus:border-sky-500 focus:outline-none"></select>
+      <button onclick="resetTaxonomyFilter()" class="ml-auto px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition">
+        <i class="fa-solid fa-filter-circle-xmark mr-1"></i>Ver Todos
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN 360 BROWSER VIEWPORT ==================== -->
+  <main class="max-w-[1600px] mx-auto p-3 sm:p-5 space-y-5">
+
+    <!-- ==================== VIEW 1: CENTRO DE MANDO 360° & KPIs ==================== -->
+    <section id="view-dashboard" class="browser-view space-y-5">
+      <!-- Top KPI Strip (7 Cards) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3" id="kpiCardsContainer"></div>
+
+      <!-- Critical Date Alerts & Upcoming Deadlines Banner -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <i class="fa-solid fa-calendar-exclamation"></i>
+            </span>
+            <div>
+              <h2 class="text-sm font-bold text-white">Radar Cronológico de Vencimientos & Fechas Críticas (Semáforo ISO)</h2>
+              <p class="text-xs text-slate-400">Control automático de vencimientos de Calibración (ISO 17025), PM (ISO 13306), Auditorías RtOL y MOC §7 (ISO 16530-1)</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 text-[11px]">
+            <span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40"><i class="fa-solid fa-circle text-[8px] mr-1"></i>Vencido (&lt; 0d)</span>
+            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40"><i class="fa-solid fa-circle text-[8px] mr-1"></i>Próximo (&le; 30d)</span>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"><i class="fa-solid fa-circle text-[8px] mr-1"></i>Vigente (&gt; 30d)</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3" id="dateRadarContainer"></div>
+      </div>
+
+      <!-- Charts Row (3 Interactive Charts) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- Chart 1: Downtime por Modo de Falla ISO 14224 -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Downtime (h) por Modo de Falla</h3>
+              <span class="text-[11px] text-sky-400 font-mono">ISO 14224 Anexo B & ISO 13306</span>
+            </div>
+            <i class="fa-solid fa-chart-column text-slate-500"></i>
+          </div>
+          <div class="relative h-60 w-full">
+            <canvas id="chartFailureDowntime"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Vibración RMS (ISO 20816) vs Temperatura Cojinetes -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Severidad Vibración RMS vs Temp.</h3>
+              <span class="text-[11px] text-amber-400 font-mono">ISO 10816 / ISO 20816-3</span>
+            </div>
+            <i class="fa-solid fa-wave-square text-slate-500"></i>
+          </div>
+          <div class="relative h-60 w-full">
+            <canvas id="chartVibrationTemp"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 3: Disponibilidad Operacional Ao (%) por Equipo -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Disponibilidad Operacional Ao (%)</h3>
+              <span class="text-[11px] text-emerald-400 font-mono">Meta Operacional &ge; 95.0%</span>
+            </div>
+            <i class="fa-solid fa-chart-pie text-slate-500"></i>
+          </div>
+          <div class="relative h-60 w-full">
+            <canvas id="chartAvailability"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Table: Modos de Falla ISO 14224 & Tipos de Mantenimiento ISO 13306 -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+            Resumen por Código de Modo de Falla (ISO 14224 Anexo B)
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950 text-slate-400 uppercase text-[10px]">
+                <tr>
+                  <th class="p-2.5 rounded-l-lg">Código</th>
+                  <th class="p-2.5">Modo de Falla</th>
+                  <th class="p-2.5 text-center">Eventos</th>
+                  <th class="p-2.5 text-right">Downtime (h)</th>
+                  <th class="p-2.5 text-right rounded-r-lg">MTTR Prom (h)</th>
+                </tr>
+              </thead>
+              <tbody id="summaryFailureModesBody" class="divide-y divide-slate-800/70"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-wrench text-sky-400"></i>
+            Distribución por Tipo de Mantenimiento (ISO 13306 / EN 15341)
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950 text-slate-400 uppercase text-[10px]">
+                <tr>
+                  <th class="p-2.5 rounded-l-lg">Tipo</th>
+                  <th class="p-2.5">Descripción Normativa</th>
+                  <th class="p-2.5 text-center">OTs</th>
+                  <th class="p-2.5 text-right">Downtime (h)</th>
+                  <th class="p-2.5 text-right rounded-r-lg">Costo Total ($)</th>
+                </tr>
+              </thead>
+              <tbody id="summaryMaintTypesBody" class="divide-y divide-slate-800/70"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 2: ÁRBOL TAXONÓMICO ISO 14224 (7 NIVELES) & ACTIVOS ==================== -->
+    <section id="view-taxonomy" class="browser-view hidden space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px]">
+            ISO 14224 • ISO 3448 • ISO 55001 | VARIABLES 1 – 35
+          </span>
+          <h2 class="text-base font-bold text-white mt-1">Explorador Taxonómico de 7 Niveles & Registro Técnico de Activos</h2>
+          <p class="text-xs text-slate-400">Industria &rarr; Planta &rarr; Sección &rarr; Unidad &rarr; Equipo &rarr; Subsistema &rarr; Componente Mantenible</p>
+        </div>
+        <button onclick="openModal('asset')" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-lg shadow-sky-900/40 flex items-center gap-2 transition">
+          <i class="fa-solid fa-plus"></i> Nuevo Activo / Componente (7 Niveles)
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Left Interactive 7-Level Tree Explorer -->
+        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg max-h-[750px] overflow-y-auto">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-2">
+              <i class="fa-solid fa-folder-tree"></i> Árbol Estructural ISO 14224
+            </h3>
+            <span id="treeAssetCount" class="text-[11px] font-mono text-slate-400">0 nodos</span>
+          </div>
+          <div id="taxonomyTreeContainer" class="space-y-2 text-xs"></div>
+        </div>
+
+        <!-- Right Detailed Technical Datasheet & Assets Table -->
+        <div class="lg:col-span-7 space-y-4">
+          <!-- Selected Asset Technical Sheet -->
+          <div id="selectedAssetCard" class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg"></div>
+
+          <!-- Assets Register Table -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200 mb-3">Inventario Jerárquico de Activos y Componentes</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-950 text-slate-400 uppercase text-[10px]">
+                  <tr>
+                    <th class="p-2.5 rounded-l-lg">Tag (N5) / Comp (N7)</th>
+                    <th class="p-2.5">Jerarquía (N3 &rarr; N6)</th>
+                    <th class="p-2.5">Lubricante ISO 3448</th>
+                    <th class="p-2.5">Puesta en Marcha / Edad</th>
+                    <th class="p-2.5 text-center">Criticidad</th>
+                    <th class="p-2.5 text-right rounded-r-lg">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="assetsTableBody" class="divide-y divide-slate-800/70"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 3: MONITOREO DE CONDICIÓN CBM & TRIBOLOGÍA ==================== -->
+    <section id="view-cbm" class="browser-view hidden space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-[10px]">
+            ISO 10816 / ISO 20816 • ISO 4406:2021 | VARIABLES 36 – 75
+          </span>
+          <h2 class="text-base font-bold text-white mt-1">Telemetría CBM, Severidad de Vibraciones & Limpieza Tribológica</h2>
+          <p class="text-xs text-slate-400">Evaluación automática de Zonas ISO 20816 (A: Bueno, B: Satisfactorio, C: Alerta, D: Peligro) y Conteo de Partículas ISO 4406</p>
+        </div>
+        <button onclick="openModal('cbm')" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold shadow-lg flex items-center gap-2 transition">
+          <i class="fa-solid fa-plus"></i> Registrar Lectura Telemetría / Aceite
+        </button>
+      </div>
+
+      <!-- ISO 20816 Reference Legend Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+        <div class="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3">
+          <div class="font-bold text-emerald-400">Zona A (&le; 2.8 mm/s RMS)</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Máquina nueva o recién comisionada. Operación óptima sin restricciones.</div>
+        </div>
+        <div class="bg-sky-950/30 border border-sky-500/30 rounded-xl p-3">
+          <div class="font-bold text-sky-400">Zona B (2.81 – 4.5 mm/s RMS)</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Aceptable para operación continua a largo plazo según ISO 20816-3.</div>
+        </div>
+        <div class="bg-amber-950/30 border border-amber-500/30 rounded-xl p-3">
+          <div class="font-bold text-amber-400">Zona C (4.51 – 7.1 mm/s RMS)</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Insatisfactoria a largo plazo. Programar mantenimiento CBM / PdM.</div>
+        </div>
+        <div class="bg-rose-950/30 border border-rose-500/30 rounded-xl p-3">
+          <div class="font-bold text-rose-400">Zona D (&gt; 7.1 mm/s RMS)</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Severidad crítica. Riesgo inminente de daño mecánico. Parada recomendada.</div>
+        </div>
+      </div>
+
+      <!-- CBM Telemetry Table -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-400 uppercase text-[10px]">
+              <tr>
+                <th class="p-2.5 rounded-l-lg">Fecha/Hora Lectura</th>
+                <th class="p-2.5">Equipo / Subsistema</th>
+                <th class="p-2.5 text-right">Horómetro (h)</th>
+                <th class="p-2.5 text-right">Vibración RMS</th>
+                <th class="p-2.5 text-center">Zona ISO 20816</th>
+                <th class="p-2.5 text-right">Temp Coj / Aceite</th>
+                <th class="p-2.5 text-right">Presión Suc/Desc</th>
+                <th class="p-2.5 text-center">ISO 4406 Aceite</th>
+                <th class="p-2.5 text-right rounded-r-lg">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cbmTableBody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 4: ÓRDENES DE TRABAJO, MODOS DE FALLA & DOWNTIME ==================== -->
+    <section id="view-workorders" class="browser-view hidden space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <div>
+          <span class="px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400 font-mono text-[10px]">
+            ISO 14224 (MODOS FALLA) • ISO 13306 / EN 15341 (DOWNTIME & RAM) | VARIABLES 76 – 115
+          </span>
+          <h2 class="text-base font-bold text-white mt-1">Gestión de Órdenes de Trabajo, Modos de Falla y Tiempos Fuera de Servicio</h2>
+          <p class="text-xs text-slate-400">Cálculo exacto de Downtime Total, Tiempo Logístico (LDT), MTTR, MTBF y Disponibilidad Operacional Ao (%)</p>
+        </div>
+        <button onclick="openModal('workorder')" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-lg flex items-center gap-2 transition">
+          <i class="fa-solid fa-plus"></i> Nueva Orden de Trabajo / Evento Falla
+        </button>
+      </div>
+
+      <!-- RAM & Downtime Summary Strip -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" id="downtimeKpiStrip"></div>
+
+      <!-- Filter Pills for Maintenance Type & Failure Mode -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center gap-2 text-xs">
+        <span class="text-slate-400 font-semibold mr-1"><i class="fa-solid fa-filter mr-1"></i>Filtrar OT:</span>
+        <select id="woMaintTypeFilter" onchange="renderWorkOrdersView()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none">
+          <option value="ALL">Todos los Tipos (ISO 13306)</option>
+          <option value="PM">PM - Preventivo Sistemático</option>
+          <option value="CBM/PdM">CBM/PdM - Predictivo / Condición</option>
+          <option value="CM-P">CM-P - Correctivo Planificado</option>
+          <option value="CM-U">CM-U - Correctivo Emergencia</option>
+          <option value="MOD">MOD - Proactivo / Modificación</option>
+        </select>
+        <select id="woFailureModeFilter" onchange="renderWorkOrdersView()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none">
+          <option value="ALL">Todos los Modos de Falla (ISO 14224)</option>
+        </select>
+        <select id="woStatusFilter" onchange="renderWorkOrdersView()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none">
+          <option value="ALL">Todos los Estados</option>
+          <option value="Abierta">Abierta</option>
+          <option value="En Ejecución">En Ejecución</option>
+          <option value="Espera Repuestos">Espera Repuestos</option>
+          <option value="Cerrada">Cerrada</option>
+        </select>
+      </div>
+
+      <!-- Work Orders Table -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-400 uppercase text-[10px]">
+              <tr>
+                <th class="p-2.5 rounded-l-lg">ID OT / Prioridad</th>
+                <th class="p-2.5">Equipo / Componente</th>
+                <th class="p-2.5">Tipo Mtto (ISO 13306)</th>
+                <th class="p-2.5">Modo Falla (ISO 14224)</th>
+                <th class="p-2.5">Cronología (Aviso &rarr; Inicio &rarr; Fin)</th>
+                <th class="p-2.5 text-right">Downtime / MTTR</th>
+                <th class="p-2.5 text-right">MTBF / Ao%</th>
+                <th class="p-2.5 text-center">Estado</th>
+                <th class="p-2.5 text-right rounded-r-lg">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="workOrdersTableBody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 5: NORMAS ISO, METROLOGÍA & INTEGRIDAD ==================== -->
+    <section id="view-iso_compliance" class="browser-view hidden space-y-5">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span class="px-2 py-0.5 rounded bg-violet-500/10 border border-violet-500/30 text-violet-400 font-mono text-[10px]">
+              ISO/IEC 17025:2017 • ISO 16530-1:2017 • NORSOK D-010 | VARIABLES 116 – 175
+            </span>
+            <h2 class="text-base font-bold text-white mt-1">Matriz de Cumplimiento Normativo ISO, Metrología & Integridad de Barreras</h2>
+            <p class="text-xs text-slate-400">Trazabilidad metrológica, control de barreras de pozo/proceso, auditorías por deméritos, MOC §7 y preparación RtOL</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="openModal('metrology')" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-ruler-combined"></i> + Instrumento ISO 17025
+            </button>
+            <button onclick="openModal('barrier')" class="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-shield-halved"></i> + Barrera ISO 16530-1
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8 ISO Standards Interactive Cards Matrix -->
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3" id="isoStandardsCardsContainer"></div>
+
+      <!-- Metrology Section (ISO/IEC 17025) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-2">
+            <i class="fa-solid fa-microscope"></i> Aseguramiento Metrológico y Calibración (ISO/IEC 17025:2017 • Var. 116–145)
+          </h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-400 uppercase text-[10px]">
+              <tr>
+                <th class="p-2.5 rounded-l-lg">Tag Instrumento</th>
+                <th class="p-2.5">Equipo Asociado</th>
+                <th class="p-2.5">Magnitud / Rango</th>
+                <th class="p-2.5">Última Calibración</th>
+                <th class="p-2.5">Próxima Calibración</th>
+                <th class="p-2.5 text-center">Días Restantes</th>
+                <th class="p-2.5">Incertidumbre (U) / Cert.</th>
+                <th class="p-2.5 text-center">Estado</th>
+                <th class="p-2.5 text-right rounded-r-lg">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="metrologyTableBody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Well & Process Integrity Barriers Section (ISO 16530-1 / NORSOK D-010) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-violet-400 flex items-center gap-2">
+            <i class="fa-solid fa-shield-virus"></i> Integridad de Barreras, Auditorías, MOC §7 y RtOL (ISO 16530-1 / NORSOK D-010 • Var. 146–175)
+          </h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-400 uppercase text-[10px]">
+              <tr>
+                <th class="p-2.5 rounded-l-lg">ID Barrera / Elemento WBE</th>
+                <th class="p-2.5">Tipo Barrera</th>
+                <th class="p-2.5 text-center">Integridad</th>
+                <th class="p-2.5 text-center">Deméritos (Max 75)</th>
+                <th class="p-2.5 text-center">RtOL</th>
+                <th class="p-2.5">Última Auditoría / Venc. MOC</th>
+                <th class="p-2.5 text-center">TRIR</th>
+                <th class="p-2.5 text-right rounded-r-lg">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="barriersTableBody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 6: DICCIONARIO 200 VARIABLES & LOGÍSTICA MRO ==================== -->
+    <section id="view-dictionary" class="browser-view hidden space-y-5">
+      <!-- MRO Inventory Section (Var 176 - 200) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div>
+            <span class="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-mono text-[10px]">
+              ISO 55000 / ISO 55001 • LOGÍSTICA MRO & CLASIFICACIÓN ABC | VARIABLES 176 – 200
+            </span>
+            <h2 class="text-base font-bold text-white mt-1">Control de Repuestos Críticos, Punto de Reorden y Valoración ABC</h2>
+          </div>
+          <button onclick="openModal('inventory')" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold flex items-center gap-2 transition">
+            <i class="fa-solid fa-plus"></i> Nuevo Repuesto MRO
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-400 uppercase text-[10px]">
+              <tr>
+                <th class="p-2.5 rounded-l-lg">SKU / Componente</th>
+                <th class="p-2.5">Descripción Repuesto</th>
+                <th class="p-2.5 text-center">Clase ABC</th>
+                <th class="p-2.5 text-right">Stock Actual / Mín</th>
+                <th class="p-2.5 text-right">Costo Unit ($)</th>
+                <th class="p-2.5 text-right">Valor Total ($)</th>
+                <th class="p-2.5">Última Reposición / Ubicación</th>
+                <th class="p-2.5 text-right rounded-r-lg">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Full 200 Variables Master Dictionary Explorer -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-database text-sky-400"></i>
+              Diccionario Técnico Maestro de 200 Variables (Var. 001 – Var. 200)
+            </h2>
+            <p class="text-xs text-slate-400">Edición en línea con persistencia automática en localStorage y trazabilidad por Norma ISO</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <select id="dictModuleFilter" onchange="renderDictionaryTable()" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-slate-200 focus:outline-none">
+              <option value="ALL">Todos los Módulos (200 Variables)</option>
+              <option value="1">Módulo 1: Identificación & Taxonomía (Var. 1–35)</option>
+              <option value="2">Módulo 2: Parámetros Operativos CBM (Var. 36–75)</option>
+              <option value="3">Módulo 3: Mantenimiento & Confiabilidad (Var. 76–115)</option>
+              <option value="4">Módulo 4: Metrología & Calibración (Var. 116–145)</option>
+              <option value="5">Módulo 5: Integridad & Seguridad (Var. 146–175)</option>
+              <option value="6">Módulo 6: Inventario MRO & Costos (Var. 176–200)</option>
+            </select>
+          </div>
+        </div>
+        <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] sticky top-0 z-10">
+              <tr>
+                <th class="p-2.5">Var #</th>
+                <th class="p-2.5">Módulo</th>
+                <th class="p-2.5">Nombre Técnico de Variable</th>
+                <th class="p-2.5">Norma ISO</th>
+                <th class="p-2.5">Activo / Referencia</th>
+                <th class="p-2.5">Valor Actual (Editable)</th>
+                <th class="p-2.5">Unidad</th>
+                <th class="p-2.5">Última Actualización</th>
+              </tr>
+            </thead>
+            <tbody id="dictionaryTableBody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== UNIVERSAL CRUD MODAL ==================== -->
+  <div id="crudModal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950 rounded-t-2xl">
+        <h3 id="modalTitle" class="text-sm font-bold text-white flex items-center gap-2"></h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+      <form id="modalForm" onsubmit="handleModalSubmit(event)" class="p-5 space-y-4 text-xs"></form>
+    </div>
+  </div>
+
+  <!-- ==================== CUSTOM CONFIRM / TOAST MESSAGE BOX (NO ALERT/CONFIRM) ==================== -->
+  <div id="confirmDialog" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center gap-3">
+        <span class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </span>
+        <div>
+          <h4 id="confirmTitle" class="text-sm font-bold text-white">Confirmar Acción</h4>
+          <p id="confirmMessage" class="text-xs text-slate-400 mt-0.5"></p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeConfirm()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancelar</button>
+        <button id="confirmActionBtn" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ==================== APPLICATION LOGIC ==================== -->
+  <script>
+    // ==================== CONSTANTS & NORMATIVE CATALOGS ====================
+    const STORAGE_KEY = 'cmms_360_iso_suite_db';
+
+    // ISO 14224 Annex B Failure Mode Codes
+    const FAILURE_MODES_ISO14224 = [
+      { code: 'BRD', name: 'Avería / Rotura Estructural', mechanism: 'Fractura / Fatiga mecánica', severity: 'Crítica' },
+      { code: 'ELF', name: 'Fuga Externa de Fluido', mechanism: 'Degradación de sellos / empaques', severity: 'Alta' },
+      { code: 'INL', name: 'Fuga Interna / Bypass', mechanism: 'Desgaste de asientos / válvulas', severity: 'Media' },
+      { code: 'VIB', name: 'Vibración Mecánica Anormal', mechanism: 'Desbalanceo / Desalineación / Rodamientos', severity: 'Alta' },
+      { code: 'OHE', name: 'Sobrecalentamiento', mechanism: 'Falla de lubricación / Fricción excesiva', severity: 'Alta' },
+      { code: 'FTS', name: 'Falla al Arrancar', mechanism: 'Falla eléctrica / neumática / control', severity: 'Crítica' },
+      { code: 'STP', name: 'Parada Intempestiva (Trip)', mechanism: 'Disparo por protección / sobrecarga', severity: 'Crítica' },
+      { code: 'LOU', name: 'Baja Salida / Pérdida de Caudal', mechanism: 'Desgaste de camisas / cavitación', severity: 'Media' },
+      { code: 'ERO', name: 'Lectura Errónea / Deriva', mechanism: 'Descalibración de sensor / transmisor', severity: 'Media' },
+      { code: 'PLU', name: 'Obstrucción / Taponamiento', mechanism: 'Acumulación de sólidos / lodo', severity: 'Media' },
+      { code: 'SER', name: 'Falla de Servicio / Control', mechanism: 'Pérdida de señal PLC / actuador', severity: 'Alta' }
+    ];
+
+    // ISO 13306 / EN 15341 Maintenance Types
+    const MAINTENANCE_TYPES_ISO13306 = [
+      { code: 'PM', name: 'Preventivo Sistemático', desc: 'Intervención programada por intervalos de tiempo u horómetro (ISO 13306 §7.2)' },
+      { code: 'CBM/PdM', name: 'Preventivo Basado en Condición / Predictivo', desc: 'Basado en monitoreo de vibraciones ISO 20816 y tribología ISO 4406 (§7.3)' },
+      { code: 'CM-P', name: 'Correctivo Planificado', desc: 'Corrección diferida y programada tras detección temprana (§7.5)' },
+      { code: 'CM-U', name: 'Correctivo de Emergencia / No Planificado', desc: 'Intervención inmediata tras falla súbita o parada intempestiva (§7.6)' },
+      { code: 'MOD', name: 'Proactivo / Modificación de Diseño', desc: 'Mejora de confiabilidad y eliminación de causa raíz / MOC (§7.8)' }
+    ];
+
+    // 8 Core ISO Standards Catalog
+    const ISO_STANDARDS_CATALOG = [
+      { code: 'ISO 14224', title: 'ISO 14224:2016', scope: 'Taxonomía de 7 Niveles, Modos de Falla Anexo B y Confiabilidad RAM (Oil & Gas)', vars: 'Var. 1–35, 76–115', color: 'emerald' },
+      { code: 'ISO 13306', title: 'ISO 13306 / EN 15341', scope: 'Terminología de Mantenimiento, Downtime, MTTR, MTBF y KPIs Económicos/Técnicos', vars: 'Var. 76–115', color: 'rose' },
+      { code: 'ISO 20816', title: 'ISO 10816 / ISO 20816-3', scope: 'Evaluación de Severidad de Vibraciones Mecánicas RMS (mm/s) Zonas A, B, C y D', vars: 'Var. 36–75', color: 'amber' },
+      { code: 'ISO 4406', title: 'ISO 4406:2021', scope: 'Codificación Tripartita de Contaminación por Partículas Sólidas en Aceite (4/6/14 µm)', vars: 'Var. 36–75', color: 'orange' },
+      { code: 'ISO 3448', title: 'ISO 3448:1992', scope: 'Clasificación de Viscosidad Cinemática ISO VG para Lubricantes Industriales', vars: 'Var. 1–35', color: 'teal' },
+      { code: 'ISO/IEC 17025', title: 'ISO/IEC 17025:2017', scope: 'Aseguramiento Metrológico, Calibración, Incertidumbre (U) y Trazabilidad', vars: 'Var. 116–145', color: 'sky' },
+      { code: 'ISO 16530-1', title: 'ISO 16530-1 & NORSOK D-010', scope: 'Integridad de Pozos, Barreras (WBE), Auditorías de Deméritos, MOC §7 y RtOL', vars: 'Var. 146–175', color: 'violet' },
+      { code: 'ISO 55001', title: 'ISO 55000 / ISO 55001', scope: 'Gestión de Activos Físicos, Matriz de Criticidad A/B/C e Inventario MRO ABC', vars: 'Var. 1–35, 176–200', color: 'cyan' }
+    ];
+
+    // ==================== SEED DATA (OIL & GAS REALISTIC DATASET) ====================
+    function generateSeedData() {
+      const assets = [
+        {
+          id: 'AST-001',
+          l1_industry: 'Petróleo y Gas - Upstream / Perforación',
+          l2_plant: 'Taladro Drillmec G 200 (Rig-204)',
+          l3_section: 'Sistema de Circulación de Lodos',
+          l4_unit: 'Unidad de Bombeo Triplex A',
+          l5_equipment: 'P-101A Bomba Triplex de Lodo',
+          l6_subsystem: 'Extremo Hidráulico',
+          l7_component: 'Camisa / Pistón Cerámico 6.5"',
+          manufacturer: 'Drillmec / National Oilwell',
+          model: '12-P-160 Triplex',
+          serial: 'DM-P101A-2021-884',
+          criticality: 'A',
+          power: '1600 HP / 1193 kW',
+          mawp: '5000 PSI / 345 Bar',
+          lubricant_iso3448: 'ISO VG 320 Sintético EP',
+          install_date: '2021-06-15',
+          warranty_end: '2024-06-15',
+          next_pm_date: '2026-11-28',
+          status: 'Operativo',
+          iso_tags: ['ISO 14224', 'ISO 3448', 'ISO 55001']
+        },
+        {
+          id: 'AST-002',
+          l1_industry: 'Petróleo y Gas - Upstream / Perforación',
+          l2_plant: 'Taladro Drillmec G 200 (Rig-204)',
+          l3_section: 'Sistema de Circulación de Lodos',
+          l4_unit: 'Unidad de Bombeo Triplex A',
+          l5_equipment: 'P-101A Bomba Triplex de Lodo',
+          l6_subsystem: 'Extremo de Potencia',
+          l7_component: 'Rodamiento Principal Cigüeñal',
+          manufacturer: 'SKF / Timken Heavy Duty',
+          model: '23244 CC/W33',
+          serial: 'SKF-99210-A',
+          criticality: 'A',
+          power: '1600 HP / 1193 kW',
+          mawp: 'N/A (Mecánico)',
+          lubricant_iso3448: 'ISO VG 220 Sintético',
+          install_date: '2021-06-15',
+          warranty_end: '2025-06-15',
+          next_pm_date: '2026-12-10',
+          status: 'Operativo - Alerta CBM',
+          iso_tags: ['ISO 14224', 'ISO 3448', 'ISO 20816']
+        },
+        {
+          id: 'AST-003',
+          l1_industry: 'Petróleo y Gas - Upstream / Perforación',
+          l2_plant: 'Taladro Drillmec G 200 (Rig-204)',
+          l3_section: 'Sistema de Izaje y Rotación',
+          l4_unit: 'Unidad de Malacate Principal',
+          l5_equipment: 'DW-01 Drawworks AC 2000HP',
+          l6_subsystem: 'Transmisión y Freno Disco',
+          l7_component: 'Caliper Freno Hidráulico Emergencia',
+          manufacturer: 'Drillmec S.p.A.',
+          model: 'DW-2000-AC',
+          serial: 'DM-DW01-2020-312',
+          criticality: 'A',
+          power: '2000 HP / 1491 kW',
+          mawp: '3000 PSI / 207 Bar',
+          lubricant_iso3448: 'ISO VG 150 Industrial',
+          install_date: '2020-09-10',
+          warranty_end: '2023-09-10',
+          next_pm_date: '2026-11-20',
+          status: 'Operativo',
+          iso_tags: ['ISO 14224', 'ISO 3448', 'ISO 55001']
+        },
+        {
+          id: 'AST-004',
+          l1_industry: 'Petróleo y Gas - Upstream / Perforación',
+          l2_plant: 'Taladro Drillmec G 200 (Rig-204)',
+          l3_section: 'Control de Pozos (Well Control)',
+          l4_unit: 'Conjunto Preventor de Reventones',
+          l5_equipment: 'BOP-STACK 13-5/8" 10K',
+          l6_subsystem: 'Acumulador Hidráulico Koomey',
+          l7_component: 'Ariete Ciego / Corte (Blind Shear Ram)',
+          manufacturer: 'Cameron / Schlumberger',
+          model: 'U-Type Double BOP 10000 PSI',
+          serial: 'CAM-BOP-7741',
+          criticality: 'A',
+          power: 'Hidráulico 3000 PSI',
+          mawp: '10000 PSI / 689 Bar',
+          lubricant_iso3448: 'ISO VG 32 Fluido Control BOP',
+          install_date: '2022-01-20',
+          warranty_end: '2027-01-20',
+          next_pm_date: '2026-12-01',
+          status: 'Operativo',
+          iso_tags: ['ISO 14224', 'ISO 16530-1', 'ISO 3448']
+        },
+        {
+          id: 'AST-005',
+          l1_industry: 'Petróleo y Gas - Upstream / Perforación',
+          l2_plant: 'Estación de Flujo Norte (EF-01)',
+          l3_section: 'Sistema de Transferencia de Crudo',
+          l4_unit: 'Unidad de Bombeo Multifásico B',
+          l5_equipment: 'P-202B Bomba Tornillo Transferencia',
+          l6_subsystem: 'Sellado Mecánico y Acoplamiento',
+          l7_component: 'Sello Mecánico Doble Cartucho API 682',
+          manufacturer: 'Flowserve / Bornemann',
+          model: 'MW-8.4 Twin Screw',
+          serial: 'FLS-202B-4410',
+          criticality: 'B',
+          power: '450 HP / 335 kW',
+          mawp: '1480 PSI / 102 Bar',
+          lubricant_iso3448: 'ISO VG 68 Turbina/Sello',
+          install_date: '2019-11-05',
+          warranty_end: '2022-11-05',
+          next_pm_date: '2026-11-10',
+          status: 'Mantenimiento',
+          iso_tags: ['ISO 14224', 'ISO 3448', 'ISO 55001']
+        }
+      ];
+
+      const cbmReadings = [
+        {
+          id: 'CBM-101',
+          timestamp: '2026-11-15T08:30',
+          assetId: 'AST-001',
+          equipment: 'P-101A Bomba Triplex de Lodo',
+          subsystem: 'Extremo Hidráulico',
+          running_hours: 14820,
+          vibration_rms: 3.4,
+          bearing_temp: 64.5,
+          oil_temp: 58.0,
+          suction_psi: 48,
+          discharge_psi: 3450,
+          current_amp: 412,
+          flow_gpm: 580,
+          oil_cleanliness: '16/14/11',
+          iso_tags: ['ISO 20816', 'ISO 4406']
+        },
+        {
+          id: 'CBM-102',
+          timestamp: '2026-11-15T09:15',
+          assetId: 'AST-002',
+          equipment: 'P-101A Bomba Triplex de Lodo',
+          subsystem: 'Extremo de Potencia',
+          running_hours: 14820,
+          vibration_rms: 6.2,
+          bearing_temp: 83.2,
+          oil_temp: 74.5,
+          suction_psi: 48,
+          discharge_psi: 3450,
+          current_amp: 428,
+          flow_gpm: 575,
+          oil_cleanliness: '19/17/14',
+          iso_tags: ['ISO 20816', 'ISO 4406']
+        },
+        {
+          id: 'CBM-103',
+          timestamp: '2026-11-15T10:00',
+          assetId: 'AST-003',
+          equipment: 'DW-01 Drawworks AC 2000HP',
+          subsystem: 'Transmisión y Freno Disco',
+          running_hours: 18450,
+          vibration_rms: 2.1,
+          bearing_temp: 55.0,
+          oil_temp: 51.2,
+          suction_psi: 0,
+          discharge_psi: 2850,
+          current_amp: 615,
+          flow_gpm: 42,
+          oil_cleanliness: '15/13/10',
+          iso_tags: ['ISO 20816', 'ISO 4406']
+        },
+        {
+          id: 'CBM-104',
+          timestamp: '2026-11-14T16:45',
+          assetId: 'AST-005',
+          equipment: 'P-202B Bomba Tornillo Transferencia',
+          subsystem: 'Sellado Mecánico y Acoplamiento',
+          running_hours: 26310,
+          vibration_rms: 7.8,
+          bearing_temp: 91.4,
+          oil_temp: 79.0,
+          suction_psi: 32,
+          discharge_psi: 680,
+          current_amp: 295,
+          flow_gpm: 920,
+          oil_cleanliness: '20/18/15',
+          iso_tags: ['ISO 20816', 'ISO 4406']
+        }
+      ];
+
+      const workOrders = [
+        {
+          id: 'OT-2026-0891',
+          assetId: 'AST-001',
+          equipment: 'P-101A Bomba Triplex de Lodo',
+          component: 'Camisa / Pistón Cerámico 6.5"',
+          maintType: 'CM-U',
+          failureCode: 'LOU',
+          priority: '1 - Crítica',
+          detectedDate: '2026-11-02T06:00',
+          scheduledDate: '2026-11-02T07:30',
+          startDate: '2026-11-02T08:00',
+          endDate: '2026-11-02T14:30',
+          logisticWaitHours: 2.0,
+          operatingTimeBeforeFailure: 720,
+          costUsd: 4850,
+          status: 'Cerrada',
+          notes: 'Desgaste prematuro de pistón módulo #2 por sólidos abrasivos. Reemplazo completo.',
+          iso_tags: ['ISO 14224', 'ISO 13306']
+        },
+        {
+          id: 'OT-2026-0904',
+          assetId: 'AST-002',
+          equipment: 'P-101A Bomba Triplex de Lodo',
+          component: 'Rodamiento Principal Cigüeñal',
+          maintType: 'CBM/PdM',
+          failureCode: 'VIB',
+          priority: '2 - Alta',
+          detectedDate: '2026-11-12T10:00',
+          scheduledDate: '2026-11-18T07:00',
+          startDate: '2026-11-15T07:00',
+          endDate: '',
+          logisticWaitHours: 4.5,
+          operatingTimeBeforeFailure: 1450,
+          costUsd: 7200,
+          status: 'En Ejecución',
+          notes: 'Vibración RMS alcanzó 6.2 mm/s (Zona C ISO 20816) e incremento de partículas ISO 4406 (19/17/14).',
+          iso_tags: ['ISO 14224', 'ISO 13306', 'ISO 20816']
+        },
+        {
+          id: 'OT-2026-0912',
+          assetId: 'AST-005',
+          equipment: 'P-202B Bomba Tornillo Transferencia',
+          component: 'Sello Mecánico Doble Cartucho API 682',
+          maintType: 'CM-U',
+          failureCode: 'ELF',
+          priority: '1 - Crítica',
+          detectedDate: '2026-11-14T15:00',
+          scheduledDate: '2026-11-14T16:00',
+          startDate: '2026-11-14T17:30',
+          endDate: '2026-11-15T05:30',
+          logisticWaitHours: 2.5,
+          operatingTimeBeforeFailure: 640,
+          costUsd: 6300,
+          status: 'Cerrada',
+          notes: 'Fuga externa en plan API 53B y vibración en Zona D (7.8 mm/s). Cambio de sello y alineación láser.',
+          iso_tags: ['ISO 14224', 'ISO 13306']
+        },
+        {
+          id: 'OT-2026-0918',
+          assetId: 'AST-003',
+          equipment: 'DW-01 Drawworks AC 2000HP',
+          component: 'Caliper Freno Hidráulico Emergencia',
+          maintType: 'PM',
+          failureCode: 'SER',
+          priority: '2 - Alta',
+          detectedDate: '2026-11-10T08:00',
+          scheduledDate: '2026-11-20T08:00',
+          startDate: '2026-11-10T09:00',
+          endDate: '2026-11-10T12:00',
+          logisticWaitHours: 1.0,
+          operatingTimeBeforeFailure: 1800,
+          costUsd: 1950,
+          status: 'Cerrada',
+          notes: 'Mantenimiento preventivo 500h, inspección de pastillas y prueba funcional de freno Crown-O-Matic.',
+          iso_tags: ['ISO 13306', 'ISO 14224']
+        },
+        {
+          id: 'OT-2026-0925',
+          assetId: 'AST-004',
+          equipment: 'BOP-STACK 13-5/8" 10K',
+          component: 'Ariete Ciego / Corte (Blind Shear Ram)',
+          maintType: 'MOD',
+          failureCode: 'INL',
+          priority: '1 - Crítica',
+          detectedDate: '2026-11-13T11:00',
+          scheduledDate: '2026-11-16T06:00',
+          startDate: '2026-11-15T06:00',
+          endDate: '',
+          logisticWaitHours: 3.0,
+          operatingTimeBeforeFailure: 2100,
+          costUsd: 12400,
+          status: 'Abierta',
+          notes: 'Actualización de elastómeros H2S de alta temperatura según MOC-2026-04 y prueba hidrostática 10,000 PSI.',
+          iso_tags: ['ISO 14224', 'ISO 13306', 'ISO 16530-1']
+        }
+      ];
+
+      const metrology = [
+        {
+          id: 'MET-001',
+          tag: 'PT-101A',
+          equipment: 'P-101A Bomba Triplex de Lodo',
+          magnitude: 'Presión Descarga Lodo',
+          range: '0 – 6,000 PSI',
+          lastCalDate: '2026-05-20',
+          nextCalDate: '2026-11-20',
+          uncertainty: '± 0.15% FS',
+          certNumber: 'CERT-LAB-2026-4412',
+          labName: 'MetroLab Venezuela (Acreditado ISO 17025)',
+          status: 'Calibrado',
+          iso_tags: ['ISO/IEC 17025']
+        },
+        {
+          id: 'MET-002',
+          tag: 'TT-101B',
+          equipment: 'P-101A Bomba Triplex de Lodo',
+          magnitude: 'Temperatura Cojinete Principal',
+          range: '0 – 150 °C',
+          lastCalDate: '2025-11-01',
+          nextCalDate: '2026-11-01',
+          uncertainty: '± 0.25 °C',
+          certNumber: 'CERT-LAB-2025-8890',
+          labName: 'SENCAMER / MetroLab',
+          status: 'Vencido',
+          iso_tags: ['ISO/IEC 17025']
+        },
+        {
+          id: 'MET-003',
+          tag: 'PT-BOP-01',
+          equipment: 'BOP-STACK 13-5/8" 10K',
+          magnitude: 'Presión Acumulador Koomey',
+          range: '0 – 5,000 PSI',
+          lastCalDate: '2026-08-15',
+          nextCalDate: '2027-02-15',
+          uncertainty: '± 0.10% FS',
+          certNumber: 'CERT-LAB-2026-6102',
+          labName: 'Bureau Veritas Calibration',
+          status: 'Calibrado',
+          iso_tags: ['ISO/IEC 17025', 'ISO 16530-1']
+        },
+        {
+          id: 'MET-004',
+          tag: 'VT-DW-01',
+          equipment: 'DW-01 Drawworks AC 2000HP',
+          magnitude: 'Acelerómetro Vibración Eje',
+          range: '0 – 25 mm/s RMS',
+          lastCalDate: '2026-06-10',
+          nextCalDate: '2026-12-10',
+          uncertainty: '± 1.2% Lectura',
+          certNumber: 'CERT-LAB-2026-5099',
+          labName: 'SKF Reliability Lab',
+          status: 'Calibrado',
+          iso_tags: ['ISO/IEC 17025', 'ISO 20816']
+        }
+      ];
+
+      const barriers = [
+        {
+          id: 'WBE-BOP-01',
+          name: 'Ariete Ciego/Corte BOP-STACK (Barrera Secundaria)',
+          equipment: 'BOP-STACK 13-5/8" 10K',
+          barrierType: 'Mecánica / Física',
+          integrityStatus: 'Íntegra',
+          auditDemerits: 8,
+          rtolStatus: 'Aprobado (RtOL OK)',
+          lastAuditDate: '2026-10-15',
+          mocExpiryDate: '2027-03-15',
+          trirIndex: 0.18,
+          iso_tags: ['ISO 16530-1']
+        },
+        {
+          id: 'WBE-KOOMEY-02',
+          name: 'Sistema Acumulador & Válvulas Control BOP',
+          equipment: 'BOP-STACK 13-5/8" 10K',
+          barrierType: 'Operacional / Hidráulica',
+          integrityStatus: 'Degradada',
+          auditDemerits: 42,
+          rtolStatus: 'Condicionado (MOC Activo)',
+          lastAuditDate: '2026-11-01',
+          mocExpiryDate: '2026-11-30',
+          trirIndex: 0.18,
+          iso_tags: ['ISO 16530-1']
+        },
+        {
+          id: 'WBE-CROWN-03',
+          name: 'Sistema Crown-O-Matic & Freno Emergencia DW-01',
+          equipment: 'DW-01 Drawworks AC 2000HP',
+          barrierType: 'Humana / Electro-Mecánica',
+          integrityStatus: 'Íntegra',
+          auditDemerits: 12,
+          rtolStatus: 'Aprobado (RtOL OK)',
+          lastAuditDate: '2026-09-25',
+          mocExpiryDate: '2027-04-20',
+          trirIndex: 0.12,
+          iso_tags: ['ISO 16530-1']
+        }
+      ];
+
+      const inventory = [
+        {
+          id: 'INV-001',
+          sku: 'SKU-DM-650-CER',
+          description: 'Kit Camisa Cerámica + Pistón 6.5" Bomba Triplex P-101A',
+          equipment: 'P-101A Bomba Triplex de Lodo',
+          abcClass: 'A',
+          currentStock: 4,
+          minStock: 3,
+          reorderPoint: 4,
+          unitCost: 2450,
+          supplier: 'Drillmec Parts International',
+          warehouseLoc: 'Almacén Rig-204 / Rack A-01',
+          lastRestockDate: '2026-10-20',
+          iso_tags: ['ISO 55001']
+        },
+        {
+          id: 'INV-002',
+          sku: 'SKU-SKF-23244',
+          description: 'Rodamiento Oscilante Principal Cigüeñal 23244 CC/W33',
+          equipment: 'P-101A Bomba Triplex de Lodo',
+          abcClass: 'A',
+          currentStock: 1,
+          minStock: 2,
+          reorderPoint: 2,
+          unitCost: 5800,
+          supplier: 'SKF Industrial Venezuela',
+          warehouseLoc: 'Almacén Central / Bóveda Climatizada B-03',
+          lastRestockDate: '2026-07-12',
+          iso_tags: ['ISO 55001']
+        },
+        {
+          id: 'INV-003',
+          sku: 'SKU-CAM-BSR-10K',
+          description: 'Kit Sellos y Cuchillas Ariete Ciego BOP 13-5/8" 10K H2S',
+          equipment: 'BOP-STACK 13-5/8" 10K',
+          abcClass: 'A',
+          currentStock: 2,
+          minStock: 2,
+          reorderPoint: 3,
+          unitCost: 8900,
+          supplier: 'SLB / Cameron Well Control',
+          warehouseLoc: 'Contenedor Well Control WC-01',
+          lastRestockDate: '2026-09-05',
+          iso_tags: ['ISO 55001', 'ISO 16530-1']
+        },
+        {
+          id: 'INV-004',
+          sku: 'SKU-FLS-API682',
+          description: 'Sello Mecánico Doble Cartucho API 682 Plan 53B',
+          equipment: 'P-202B Bomba Tornillo Transferencia',
+          abcClass: 'B',
+          currentStock: 3,
+          minStock: 2,
+          reorderPoint: 2,
+          unitCost: 3100,
+          supplier: 'Flowserve Seals Corp.',
+          warehouseLoc: 'Almacén EF-01 / Estante C-04',
+          lastRestockDate: '2026-11-15',
+          iso_tags: ['ISO 55001']
+        },
+        {
+          id: 'INV-005',
+          sku: 'SKU-LUB-VG320',
+          description: 'Tambor 208L Aceite Sintético Industrial ISO VG 320 EP',
+          equipment: 'P-101A Bomba Triplex de Lodo',
+          abcClass: 'C',
+          currentStock: 12,
+          minStock: 6,
+          reorderPoint: 8,
+          unitCost: 980,
+          supplier: 'Chevron / Mobil Industrial',
+          warehouseLoc: 'Patio Lubricantes L-02',
+          lastRestockDate: '2026-10-28',
+          iso_tags: ['ISO 55001', 'ISO 3448']
+        }
+      ];
+
+      // Generate complete 200 Variables Dictionary mapped to the 6 Modules
+      const dictionary200 = generate200VariablesDictionary(assets, cbmReadings, workOrders, metrology, barriers, inventory);
+
+      return { assets, cbmReadings, workOrders, metrology, barriers, inventory, dictionary200 };
+    }
+
+    function generate200VariablesDictionary(assets, cbm, wos, met, bar, inv) {
+      const moduleSpecs = [
+        { mod: 1, start: 1, end: 35, name: 'Identificación y Especificaciones Técnicas', iso: 'ISO 14224 / ISO 3448', ref: 'P-101A / Taxonomía 7N',
+          templates: [
+            ['Código Nivel 1 Industria (ISO 14224)', 'OG-UP-DRILL', 'Código'],
+            ['Código Nivel 2 Planta / Taladro', 'RIG-G200-204', 'Código'],
+            ['Código Nivel 3 Sección / Sistema', 'SYS-MUD-CIRC', 'Código'],
+            ['Código Nivel 4 Unidad Funcional', 'UNIT-TRIPLEX-A', 'Código'],
+            ['Tag Nivel 5 Equipo Principal', 'P-101A', 'Tag'],
+            ['Código Nivel 6 Subsistema', 'SUB-HYD-END', 'Código'],
+            ['Código Nivel 7 Componente Mantenible', 'CMP-LINER-65', 'Código'],
+            ['Fabricante OEM', 'Drillmec S.p.A.', 'Texto'],
+            ['Modelo de Placa', '12-P-160 Triplex', 'Texto'],
+            ['Número de Serial', 'DM-P101A-2021-884', 'Serial'],
+            ['Potencia Nominal Motor/Bomba', '1600', 'HP'],
+            ['Potencia Equivalente kW', '1193', 'kW'],
+            ['Presión Máxima Admisible (MAWP)', '5000', 'PSI'],
+            ['Presión de Prueba Hidrostática', '7500', 'PSI'],
+            ['Velocidad Nominal de Diseño', '120', 'SPM / RPM'],
+            ['Diámetro de Camisa / Pistón', '6.5', 'in'],
+            ['Longitud de Carrera (Stroke)', '12.0', 'in'],
+            ['Grado Viscosidad Lubricante (ISO 3448)', 'ISO VG 320', 'ISO VG'],
+            ['Tipo de Lubricante Base', 'Sintético PAO EP', 'Texto'],
+            ['Capacidad Cárter Lubricación', '380', 'Litros'],
+            ['Índice de Criticidad (ISO 55001)', 'A (Crítico)', 'Clase'],
+            ['Factor Impacto Seguridad/Ambiente', '9.5', 'Pts (1-10)'],
+            ['Factor Impacto Producción', '10.0', 'Pts (1-10)'],
+            ['Fecha Fabricación Equipo', '2021-01-18', 'Fecha'],
+            ['Fecha Puesta en Marcha (Comisionado)', '2021-06-15', 'Fecha'],
+            ['Fecha Vencimiento Garantía OEM', '2024-06-15', 'Fecha'],
+            ['Vida Útil de Diseño', '20', 'Años'],
+            ['Edad Operacional Actual', '5.4', 'Años'],
+            ['Peso Seco del Equipo', '24800', 'kg'],
+            ['Material Construcción Cuerpo', 'Acero Aleado AISI 4140', 'Norma'],
+            ['Clasificación Área Peligrosa', 'Zone 1 / Class I Div 1', 'IEC/NEC'],
+            ['Grado Protección IP / NEMA', 'IP66 / NEMA 4X', 'Código'],
+            ['Código P&ID de Referencia', 'PID-204-MC-001', 'Plano'],
+            ['Estado Operacional Actual', 'Operativo', 'Estado'],
+            ['Centro de Costo SAP / ERP', 'CC-DRILL-4020', 'Código']
+          ]
+        },
+        { mod: 2, start: 36, end: 75, name: 'Parámetros Operativos y Monitoreo CBM', iso: 'ISO 20816 / ISO 4406', ref: 'P-101A / DW-01 Telemetría',
+          templates: [
+            ['Horómetro Acumulado Total', '14820', 'Horas'],
+            ['Horas Desde Último Overhaul', '4120', 'Horas'],
+            ['Velocidad Vibración RMS Eje X', '3.40', 'mm/s'],
+            ['Velocidad Vibración RMS Eje Y', '6.20', 'mm/s'],
+            ['Velocidad Vibración RMS Axial Z', '2.85', 'mm/s'],
+            ['Aceleración Pico Envolvente Rodamiento', '4.15', 'gE'],
+            ['Zona Severidad Vibración (ISO 20816)', 'Zona C (Alerta)', 'Zona'],
+            ['Temperatura Cojinete Lado Acople', '83.2', '°C'],
+            ['Temperatura Cojinete Lado Libre', '64.5', '°C'],
+            ['Temperatura Aceite Cárter Principal', '74.5', '°C'],
+            ['Temperatura Diferencial ΔT Cojinete', '18.7', '°C'],
+            ['Presión Succión Bomba Lodo', '48.0', 'PSI'],
+            ['Presión Descarga Alta Presión', '3450', 'PSI'],
+            ['Presión Diferencial Operativa ΔP', '3402', 'PSI'],
+            ['Presión Aceite Lubricación Forzada', '62.0', 'PSI'],
+            ['Caudal Volumétrico Descarga', '580', 'GPM'],
+            ['Eficiencia Volumétrica Estimada', '94.2', '%'],
+            ['Corriente Motor Principal Fase A', '412', 'Amp'],
+            ['Corriente Motor Principal Fase B', '418', 'Amp'],
+            ['Corriente Motor Principal Fase C', '415', 'Amp'],
+            ['Desbalanceo de Corriente Fases', '1.45', '%'],
+            ['Tensión de Alimentación Bus VFD', '600', 'VAC'],
+            ['Factor de Potencia (cos φ)', '0.91', 'Ratio'],
+            ['Frecuencia Variador VFD', '48.5', 'Hz'],
+            ['Torque Instantáneo en Eje', '18450', 'Nm'],
+            ['Código Limpieza Aceite ISO 4406 (>4µm)', '19', 'Código ISO'],
+            ['Código Limpieza Aceite ISO 4406 (>6µm)', '17', 'Código ISO'],
+            ['Código Limpieza Aceite ISO 4406 (>14µm)', '14', 'Código ISO'],
+            ['Código Tripartito Completo ISO 4406', '19/17/14', 'ISO 4406'],
+            ['Contenido de Agua en Aceite (Karl Fischer)', '185', 'ppm'],
+            ['Viscosidad Cinemática @ 40°C', '214.5', 'cSt'],
+            ['Número Ácido Total (TAN)', '1.42', 'mg KOH/g'],
+            ['Concentración Hierro Desgaste (Fe)', '68', 'ppm'],
+            ['Concentración Cobre Desgaste (Cu)', '24', 'ppm'],
+            ['Índice PQ Ferrografía Analítica', '38', 'Índice'],
+            ['Temperatura Devanado Estator U/V/W', '92.0', '°C'],
+            ['Nivel Aceite Cárter (%)', '88.0', '%'],
+            ['Presión Precarga Amortiguador Pulsaciones', '1150', 'PSI'],
+            ['Ruido Acústico Operacional @ 1m', '89.5', 'dBA'],
+            ['Timestamp Última Muestra Telemetría', '2026-11-15 09:15', 'Fecha/Hora']
+          ]
+        },
+        { mod: 3, start: 76, end: 115, name: 'Gestión de Mantenimiento y Confiabilidad', iso: 'ISO 14224 / ISO 13306', ref: 'OTs & Análisis RAM',
+          templates: [
+            ['ID Orden de Trabajo Activa', 'OT-2026-0904', 'ID'],
+            ['Tipo Mantenimiento (ISO 13306)', 'CBM/PdM', 'Código'],
+            ['Código Modo de Falla (ISO 14224)', 'VIB', 'Código'],
+            ['Mecanismo de Falla (ISO 14224)', 'Desgaste Rodamiento', 'Texto'],
+            ['Causa Raíz Clasificada', 'Contaminación Aceite', 'Texto'],
+            ['Prioridad de Atención OT', '2 - Alta', 'Nivel'],
+            ['Fecha/Hora Detección de Falla', '2026-11-12 10:00', 'Fecha/Hora'],
+            ['Fecha/Hora Programada Intervención', '2026-11-18 07:00', 'Fecha/Hora'],
+            ['Fecha/Hora Inicio Real Reparación', '2026-11-15 07:00', 'Fecha/Hora'],
+            ['Fecha/Hora Fin Real Reparación', 'En Curso', 'Fecha/Hora'],
+            ['Fecha Próxima Intervención PM', '2026-12-10', 'Fecha'],
+            ['Downtime Total Acumulado Mes', '27.5', 'Horas'],
+            ['Tiempo Activo Reparación (MTTM)', '14.5', 'Horas'],
+            ['Tiempo Espera Logística (LDT)', '13.0', 'Horas'],
+            ['Tiempo Administrativo / Permisos PTW', '2.5', 'Horas'],
+            ['MTTR (Tiempo Medio Para Reparar)', '6.88', 'Horas'],
+            ['MTBF (Tiempo Medio Entre Fallas)', '1342', 'Horas'],
+            ['MTTF (Tiempo Medio Hasta Falla)', '1335', 'Horas'],
+            ['Tasa de Fallas (λ)', '0.000745', 'Fallas/h'],
+            ['Tasa de Reparación (μ)', '0.1453', 'Rep/h'],
+            ['Disponibilidad Inherente (Ai)', '99.49', '%'],
+            ['Disponibilidad Operacional (Ao)', '98.12', '%'],
+            ['Confiabilidad R(t) a 720 horas', '58.4', '%'],
+            ['Mantenibilidad M(t) a 8 horas', '68.7', '%'],
+            ['Cumplimiento Programa PM (PMP)', '94.0', '%'],
+            ['Backlog de Mantenimiento Pendiente', '18.5', 'Horas-Hombre'],
+            ['Relación Mantenimiento Planificado', '76.5', '%'],
+            ['Relación Mantenimiento Correctivo Emerg.', '12.0', '%'],
+            ['Horas-Hombre Ejecutadas Mes', '142', 'HH'],
+            ['Costo Mano de Obra Directa OT', '2450', 'USD'],
+            ['Costo Repuestos Consumidos OT', '4100', 'USD'],
+            ['Costo Servicios Especializados', '650', 'USD'],
+            ['Costo Total Acumulado Mantenimiento', '32700', 'USD'],
+            ['Costo por Hora de Indisponibilidad', '4500', 'USD/h'],
+            ['Impacto Económico Downtime', '123750', 'USD'],
+            ['Número de Fallas Repetitivas (90d)', '1', 'Eventos'],
+            ['Índice OEE (Eficiencia Global Equipo)', '89.4', '%'],
+            ['Estado Permiso Trabajo Seguro (PTW)', 'PTW-2026-1198 Activo', 'Código'],
+            ['Técnico / Especialista Asignado', 'Ing. C. Mendoza (Mecánica)', 'Texto'],
+            ['Estatus Cierre Técnico OT', 'En Ejecución', 'Estado']
+          ]
+        },
+        { mod: 4, start: 116, end: 145, name: 'Metrología y Calibración', iso: 'ISO/IEC 17025:2017', ref: 'Instrumentación Crítica',
+          templates: [
+            ['Tag Instrumento de Proceso', 'PT-101A', 'Tag'],
+            ['Magnitud Física Medida', 'Presión Manométrica', 'Magnitud'],
+            ['Rango Mínimo Calibración (LRV)', '0', 'PSI'],
+            ['Rango Máximo Calibración (URV)', '6000', 'PSI'],
+            ['Span de Medición', '6000', 'PSI'],
+            ['Señal de Salida Instrumento', '4 – 20 mA HART', 'Señal'],
+            ['Exactitud Nominal Fabricante', '0.075', '% Span'],
+            ['Incertidumbre Expandida (U, k=2)', '± 0.15% FS', 'Incertidumbre'],
+            ['Factor de Cobertura (k)', '2.0 (95.45%)', 'Factor'],
+            ['Error Máximo Permitido (EMP)', '± 0.50% FS', 'Tolerancia'],
+            ['Error Encontrado (As-Found)', '+0.11% FS', 'Desviación'],
+            ['Error Dejado (As-Left)', '+0.02% FS', 'Desviación'],
+            ['Fecha Última Calibración', '2026-05-20', 'Fecha'],
+            ['Intervalo Calibración Establecido', '180', 'Días'],
+            ['Fecha Próxima Calibración', '2026-11-20', 'Fecha'],
+            ['Días Restantes Vigencia Calibración', '5', 'Días'],
+            ['Estado Vigencia Metrológica', 'Calibrado (Próximo)', 'Estado'],
+            ['Número Certificado Calibración', 'CERT-LAB-2026-4412', 'Código'],
+            ['Laboratorio Ejecutor', 'MetroLab Venezuela', 'Entidad'],
+            ['Código Acreditación ISO/IEC 17025', 'ONAC/SENCAMER-17025-09', 'Acreditación'],
+            ['Patrón de Referencia Utilizado', 'Balanza Pesos Muertos Fluke', 'Patrón'],
+            ['Trazabilidad Metrológica', 'NIST / CENAM', 'Trazabilidad'],
+            ['Temperatura Ambiental Calibración', '21.5', '°C'],
+            ['Humedad Relativa Calibración', '48.0', '% RH'],
+            ['Sello de Seguridad / Precinto', 'PREC-88412 Intacto', 'Código'],
+            ['Índice de Capacidad Metrológica (TUR)', '4.2 : 1', 'Ratio'],
+            ['Cantidad Instrumentos Totales Planta', '4', 'Unidades'],
+            ['Cantidad Instrumentos Vigentes', '3', 'Unidades'],
+            ['Cantidad Instrumentos Vencidos', '1', 'Unidades'],
+            ['Cumplimiento Plan Calibración (%)', '75.0', '%']
+          ]
+        },
+        { mod: 5, start: 146, end: 175, name: 'Integridad Operacional y Seguridad', iso: 'ISO 16530-1 / NORSOK D-010', ref: 'Barreras WBE & MOC',
+          templates: [
+            ['ID Elemento Barrera Pozo (WBE)', 'WBE-BOP-01', 'Código'],
+            ['Clasificación Barrera (Primaria/Sec.)', 'Barrera Secundaria', 'Clase'],
+            ['Tipo de Barrera (Física/Op/Humana)', 'Mecánica / Física', 'Tipo'],
+            ['Estado de Integridad de Barrera', 'Íntegra', 'Estado'],
+            ['Presión Prueba Cierre Ariete', '10000', 'PSI'],
+            ['Tiempo Cierre BOP Medido (NORSOK)', '18.5', 'Segundos'],
+            ['Tiempo Máximo Cierre Permitido', '30.0', 'Segundos'],
+            ['Volumen Usable Acumulador Koomey', '340', 'Galones'],
+            ['Presión Precarga Nitrógeno Botellas', '1000', 'PSI'],
+            ['Fecha Última Prueba Funcional BOP', '2026-11-01', 'Fecha'],
+            ['Fecha Próxima Prueba Requerida (14d)', '2026-11-15', 'Fecha'],
+            ['Puntaje Deméritos Auditoría Actual', '8', 'Pts'],
+            ['Límite Máximo Deméritos Permitido', '75', 'Pts'],
+            ['Margen Seguridad Auditoría', '89.3', '%'],
+            ['Estado Preparación Operativa (RtOL)', 'Aprobado (RtOL OK)', 'Estado'],
+            ['Fecha Última Auditoría Integridad', '2026-10-15', 'Fecha'],
+            ['Fecha Próxima Auditoría Programada', '2027-01-15', 'Fecha'],
+            ['Código Gestión del Cambio (MOC §7)', 'MOC-2026-04', 'Código'],
+            ['Estatus Aprobación MOC', 'Aprobado Temporal', 'Estado'],
+            ['Fecha Vencimiento MOC Temporal', '2026-11-30', 'Fecha'],
+            ['Días Restantes Cierre MOC', '15', 'Días'],
+            ['Evaluación Riesgo HAZOP / LOPA', 'SIL-2 Verificado', 'Nivel SIL'],
+            ['Índice Frecuencia Registrable (TRIR)', '0.18', 'Eventos/200k HH'],
+            ['Días Sin Accidentes con Tiempo Perdido', '412', 'Días'],
+            ['Número Fugas Contención Primaria (LOPC)', '0', 'Eventos'],
+            ['Cumplimiento Inspecciones Pre-Turno', '98.5', '%'],
+            ['Verificación Válvulas ESD / PSV', '100', '%'],
+            ['Última Calibración Válvula Alivio PSV', '2026-07-19', 'Fecha'],
+            ['Certificado Inspección No Destructiva NDT', 'NDT-UT-2026-331', 'Código'],
+            ['Índice Global Salud Barreras (%)', '66.7', '%']
+          ]
+        },
+        { mod: 6, start: 176, end: 200, name: 'Inventario, Repuestos y Costos MRO', iso: 'ISO 55000 / ISO 55001', ref: 'Almacén & Valoración ABC',
+          templates: [
+            ['Código SKU Repuesto Principal', 'SKU-DM-650-CER', 'SKU'],
+            ['Descripción Técnica Ítem MRO', 'Kit Camisa Cerámica + Pistón 6.5"', 'Texto'],
+            ['Clasificación Pareta ABC', 'Clase A (Crítico)', 'Clase'],
+            ['Criticidad Operacional Repuesto (VED)', 'V - Vital', 'VED'],
+            ['Stock Físico Disponible Actual', '4', 'Unidades'],
+            ['Stock Mínimo de Seguridad', '3', 'Unidades'],
+            ['Punto de Reorden (ROP)', '4', 'Unidades'],
+            ['Stock Máximo Almacén', '8', 'Unidades'],
+            ['Cantidad Económica de Pedido (EOQ)', '4', 'Unidades'],
+            ['Tiempo Entrega Proveedor (Lead Time)', '21', 'Días'],
+            ['Costo Unitario Promedio Ponderado', '2450.00', 'USD'],
+            ['Valor Total Ítem en Inventario', '9800.00', 'USD'],
+            ['Valor Total Inventario Planta (MRO)', '56860.00', 'USD'],
+            ['Valor Inventario Clase A (%)', '76.3', '%'],
+            ['Valor Inventario Clase B (%)', '16.4', '%'],
+            ['Valor Inventario Clase C (%)', '7.3', '%'],
+            ['Ítems Bajo Punto de Reorden', '2', 'Ítems'],
+            ['Tasa Rotación de Inventario Anual', '2.8', 'Rotaciones/año'],
+            ['Exactitud Registro Inventario (IRA)', '99.2', '%'],
+            ['Proveedor Principal Homologado', 'Drillmec Parts International', 'Entidad'],
+            ['Ubicación Física Almacén / Bin', 'Almacén Rig-204 / Rack A-01', 'Ubicación'],
+            ['Fecha Última Reposición Ingreso', '2026-10-20', 'Fecha'],
+            ['Fecha Último Consumo / Salida OT', '2026-11-02', 'Fecha'],
+            ['Condición Preservación Almacén', 'Climatizado / Embalaje VCI', 'Condición'],
+            ['Presupuesto MRO Anual Ejecutado (%)', '74.8', '%']
+          ]
+        }
+      ];
+
+      const list = [];
+      moduleSpecs.forEach(m => {
+        m.templates.forEach((tpl, idx) => {
+          const varNum = m.start + idx;
+          list.push({
+            varNum,
+            moduleNum: m.mod,
+            moduleName: m.name,
+            name: tpl[0],
+            value: tpl[1],
+            unit: tpl[2],
+            isoStandard: m.iso,
+            assetRef: m.ref,
+            updatedAt: '2026-11-15'
+          });
+        });
+      });
+      return list;
+    }
+
+    // ==================== STATE MANAGEMENT & LOCALSTORAGE ====================
+    let appState = {
+      activeTab: 'dashboard',
+      tabHistory: ['dashboard'],
+      historyIndex: 0,
+      selectedAssetId: 'AST-001',
+      taxonomyFilter: { l1: '', l2: '', l3: '', l4: '', l5: '', l6: '', l7: '' },
+      globalSearch: '',
+      masterIso: 'ALL',
+      dateFrom: '',
+      dateTo: '',
+      db: null
+    };
+
+    let charts = {
+      failureDowntime: null,
+      vibrationTemp: null,
+      availability: null
+    };
+
+    function loadDatabase() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          appState.db = JSON.parse(raw);
+          // Validate integrity
+          if (!appState.db.assets || !appState.db.dictionary200) {
+            throw new Error('Estructura incompleta');
+          }
+        } else {
+          appState.db = generateSeedData();
+          saveDatabase(false);
+        }
+      } catch (e) {
+        console.warn('Reiniciando base de datos localStorage:', e);
+        appState.db = generateSeedData();
+        saveDatabase(false);
+      }
+    }
+
+    function saveDatabase(showNotification = true) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState.db));
+        const badge = document.getElementById('dbStatusBadge');
+        if (badge) {
+          badge.innerHTML = `<i class="fa-solid fa-database text-[10px]"></i> localStorage: Guardado (${new Date().toLocaleTimeString()})`;
+        }
+        if (showNotification) {
+          showToast('Datos guardados en localStorage correctamente.', 'success');
+        }
+      } catch (err) {
+        showToast('Error al guardar en localStorage: ' + err.message, 'error');
+      }
+    }
+
+    // ==================== DATE & DOWNTIME CALCULATION HELPERS ====================
+    function calculateWorkOrderMetrics(wo) {
+      let totalDowntime = 0;
+      let activeRepairTime = 0;
+      const start = wo.startDate ? new Date(wo.startDate) : null;
+      const end = wo.endDate ? new Date(wo.endDate) : new Date('2026-11-15T16:00:00');
+      const detected = wo.detectedDate ? new Date(wo.detectedDate) : start;
+
+      if (start && !isNaN(start.getTime()) && end && !isNaN(end.getTime())) {
+        const diffMs = Math.max(0, end - start);
+        activeRepairTime = +(diffMs / (1000 * 60 * 60)).toFixed(2);
+      }
+
+      const ldt = parseFloat(wo.logisticWaitHours) || 0;
+      // Total Downtime = Logistic Wait (LDT) + Active Repair Time (or detected-to-end if greater)
+      if (detected && !isNaN(detected.getTime()) && end && !isNaN(end.getTime())) {
+        const totalSpan = Math.max(0, (end - detected) / (1000 * 60 * 60));
+        totalDowntime = +Math.max(totalSpan, activeRepairTime + ldt).toFixed(2);
+      } else {
+        totalDowntime = +(activeRepairTime + ldt).toFixed(2);
+      }
+
+      const mttr = activeRepairTime > 0 ? activeRepairTime : totalDowntime;
+      const mtbf = parseFloat(wo.operatingTimeBeforeFailure) || 720;
+      const availability = mtbf + totalDowntime > 0
+        ? +((mtbf / (mtbf + totalDowntime)) * 100).toFixed(2)
+        : 100;
+
+      return { totalDowntime, activeRepairTime, ldt, mttr, mtbf, availability };
+    }
+
+    function getDaysRemaining(targetDateStr) {
+      if (!targetDateStr) return null;
+      const today = new Date('2026-11-15T00:00:00');
+      const target = new Date(targetDateStr + 'T00:00:00');
+      if (isNaN(target.getTime())) return null;
+      return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+    }
+
+    function getDateStatusBadge(days) {
+      if (days === null) return `<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">Sin Fecha</span>`;
+      if (days < 0) {
+        return `<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono text-[10px] font-bold">Vencido (${Math.abs(days)}d)</span>`;
+      }
+      if (days <= 30) {
+        return `<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono text-[10px] font-bold">Próximo (${days}d)</span>`;
+      }
+      return `<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono text-[10px] font-bold">Vigente (${days}d)</span>`;
+    }
+
+    function calculateAssetAgeYears(installDateStr) {
+      if (!installDateStr) return 'N/A';
+      const inst = new Date(installDateStr);
+      const now = new Date('2026-11-15');
+      if (isNaN(inst.getTime())) return 'N/A';
+      const years = ((now - inst) / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1);
+      return `${years} años`;
+    }
+
+    function getIso20816Zone(rms) {
+      const val = parseFloat(rms) || 0;
+      if (val <= 2.8) return { zone: 'Zona A', label: 'Óptimo', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
+      if (val <= 4.5) return { zone: 'Zona B', label: 'Satisfactorio', cls: 'bg-sky-500/20 text-sky-300 border-sky-500/40' };
+      if (val <= 7.1) return { zone: 'Zona C', label: 'Alerta CBM', cls: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
+      return { zone: 'Zona D', label: 'Crítico / Peligro', cls: 'bg-rose-500/20 text-rose-300 border-rose-500/40' };
+    }
+
+    // ==================== FILTERING ENGINE ====================
+    function matchesGlobalFilters(record, dateField = null) {
+      const q = appState.globalSearch.trim().toLowerCase();
+      const iso = appState.masterIso;
+      const dFrom = appState.dateFrom;
+      const dTo = appState.dateTo;
+
+      // 1. ISO Standard Filter
+      if (iso !== 'ALL') {
+        const tags = record.iso_tags || [record.isoStandard || ''];
+        const joined = tags.join(' ').toLowerCase();
+        if (!joined.includes(iso.toLowerCase())) return false;
+      }
+
+      // 2. Date Range Filter
+      if (dateField && record[dateField]) {
+        const recDate = record[dateField].slice(0, 10);
+        if (dFrom && recDate < dFrom) return false;
+        if (dTo && recDate > dTo) return false;
+      }
+
+      // 3. Taxonomy Filter (if record has equipment or assetId)
+      const tf = appState.taxonomyFilter;
+      if (tf.l1 || tf.l2 || tf.l3 || tf.l4 || tf.l5 || tf.l6 || tf.l7) {
+        let asset = null;
+        if (record.l1_industry) {
+          asset = record;
+        } else if (record.assetId) {
+          asset = appState.db.assets.find(a => a.id === record.assetId);
+        } else if (record.equipment) {
+          asset = appState.db.assets.find(a => a.l5_equipment === record.equipment);
+        }
+        if (asset) {
+          if (tf.l1 && asset.l1_industry !== tf.l1) return false;
+          if (tf.l2 && asset.l2_plant !== tf.l2) return false;
+          if (tf.l3 && asset.l3_section !== tf.l3) return false;
+          if (tf.l4 && asset.l4_unit !== tf.l4) return false;
+          if (tf.l5 && asset.l5_equipment !== tf.l5) return false;
+          if (tf.l6 && asset.l6_subsystem !== tf.l6) return false;
+          if (tf.l7 && asset.l7_component !== tf.l7) return false;
+        }
+      }
+
+      // 4. Omnibox Text Search
+      if (q) {
+        const blob = JSON.stringify(record).toLowerCase();
+        if (!blob.includes(q)) return false;
+      }
+
+      return true;
+    }
+
+    function handleGlobalFilterChange() {
+      appState.globalSearch = document.getElementById('globalSearchInput').value;
+      appState.masterIso = document.getElementById('masterIsoFilter').value;
+      appState.dateFrom = document.getElementById('dateFromFilter').value;
+      appState.dateTo = document.getElementById('dateToFilter').value;
+
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (appState.globalSearch) clearBtn.classList.remove('hidden');
+      else clearBtn.classList.add('hidden');
+
+      renderAll();
+    }
+
+    function clearGlobalFilters() {
+      document.getElementById('globalSearchInput').value = '';
+      document.getElementById('masterIsoFilter').value = 'ALL';
+      document.getElementById('dateFromFilter').value = '';
+      document.getElementById('dateToFilter').value = '';
+      appState.globalSearch = '';
+      appState.masterIso = 'ALL';
+      appState.dateFrom = '';
+      appState.dateTo = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      renderAll();
+    }
+
+    // ==================== 7-LEVEL TAXONOMY CASCADING SELECTORS ====================
+    function populateTaxonomySelectors() {
+      const assets = appState.db.assets;
+      const tf = appState.taxonomyFilter;
+
+      const levels = [
+        { el: 'taxL1', key: 'l1_industry', filterKey: 'l1', label: 'N1: Industria' },
+        { el: 'taxL2', key: 'l2_plant', filterKey: 'l2', label: 'N2: Planta' },
+        { el: 'taxL3', key: 'l3_section', filterKey: 'l3', label: 'N3: Sección' },
+        { el: 'taxL4', key: 'l4_unit', filterKey: 'l4', label: 'N4: Unidad' },
+        { el: 'taxL5', key: 'l5_equipment', filterKey: 'l5', label: 'N5: Equipo' },
+        { el: 'taxL6', key: 'l6_subsystem', filterKey: 'l6', label: 'N6: Subsistema' },
+        { el: 'taxL7', key: 'l7_component', filterKey: 'l7', label: 'N7: Componente' }
+      ];
+
+      let subset = [...assets];
+      levels.forEach((lvl, idx) => {
+        const select = document.getElementById(lvl.el);
+        const uniqueVals = [...new Set(subset.map(a => a[lvl.key]).filter(Boolean))];
+        const currentVal = tf[lvl.filterKey];
+
+        select.innerHTML = `<option value="">${lvl.label} (Todos)</option>` +
+          uniqueVals.map(v => `<option value="${v}" ${v === currentVal ? 'selected' : ''}>${v}</option>`).join('');
+
+        if (currentVal) {
+          subset = subset.filter(a => a[lvl.key] === currentVal);
+        }
+      });
+    }
+
+    function onTaxSelect(levelNum) {
+      const keys = ['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7'];
+      const val = document.getElementById(`taxL${levelNum}`).value;
+      appState.taxonomyFilter[keys[levelNum - 1]] = val;
+      // Clear deeper levels
+      for (let i = levelNum; i < 7; i++) {
+        appState.taxonomyFilter[keys[i]] = '';
+      }
+      populateTaxonomySelectors();
+      renderAll();
+    }
+
+    function resetTaxonomyFilter() {
+      appState.taxonomyFilter = { l1: '', l2: '', l3: '', l4: '', l5: '', l6: '', l7: '' };
+      populateTaxonomySelectors();
+      renderAll();
+    }
+
+    // ==================== 360 BROWSER TAB NAVIGATION ====================
+    function switchTab(tabId, pushHistory = true) {
+      appState.activeTab = tabId;
+
+      if (pushHistory) {
+        appState.tabHistory = appState.tabHistory.slice(0, appState.historyIndex + 1);
+        appState.tabHistory.push(tabId);
+        appState.historyIndex = appState.tabHistory.length - 1;
+      }
+
+      // Update Tab Buttons
+      document.querySelectorAll('.browser-tab').forEach(btn => {
+        if (btn.dataset.tab === tabId) {
+          btn.classList.remove('browser-tab-inactive');
+          btn.classList.add('browser-tab-active');
+        } else {
+          btn.classList.remove('browser-tab-active');
+          btn.classList.add('browser-tab-inactive');
+        }
+      });
+
+      // Update Views
+      document.querySelectorAll('.browser-view').forEach(sec => sec.classList.add('hidden'));
+      const activeSec = document.getElementById(`view-${tabId}`);
+      if (activeSec) activeSec.classList.remove('hidden');
+
+      // Update Omnibox URL Path
+      const paths = {
+        dashboard: 'iso360://centro-mando-kpis/',
+        taxonomy: 'iso360://iso-14224/taxonomia-7-niveles/',
+        cbm: 'iso360://iso-20816-4406/telemetria-cbm/',
+        workorders: 'iso360://iso-13306/ordenes-downtime/',
+        iso_compliance: 'iso360://iso-17025-16530/cumplimiento-normativo/',
+        dictionary: 'iso360://iso-55001/diccionario-200-vars-mro/'
+      };
+      document.getElementById('omniboxPath').textContent = paths[tabId] || 'iso360://suite/';
+
+      renderAll();
+    }
+
+    function navigateHistory(delta) {
+      const nextIdx = appState.historyIndex + delta;
+      if (nextIdx >= 0 && nextIdx < appState.tabHistory.length) {
+        appState.historyIndex = nextIdx;
+        switchTab(appState.tabHistory[nextIdx], false);
+      }
+    }
+
+    // ==================== RENDER VIEW 1: DASHBOARD 360° & KPIs ====================
+    function renderDashboardView() {
+      const assets = appState.db.assets.filter(a => matchesGlobalFilters(a, 'install_date'));
+      const wos = appState.db.workOrders.filter(w => matchesGlobalFilters(w, 'detectedDate'));
+      const mets = appState.db.metrology.filter(m => matchesGlobalFilters(m, 'nextCalDate'));
+      const bars = appState.db.barriers.filter(b => matchesGlobalFilters(b, 'lastAuditDate'));
+      const invs = appState.db.inventory.filter(i => matchesGlobalFilters(i, 'lastRestockDate'));
+
+      // KPI Calculations
+      const totalAssets = assets.length;
+      const openWos = wos.filter(w => w.status !== 'Cerrada').length;
+
+      let totalDowntimeSum = 0;
+      let availSum = 0;
+      wos.forEach(w => {
+        const m = calculateWorkOrderMetrics(w);
+        totalDowntimeSum += m.totalDowntime;
+        availSum += m.availability;
+      });
+      const avgAvailability = wos.length ? (availSum / wos.length).toFixed(2) : '100.00';
+
+      const validMets = mets.filter(m => {
+        const d = getDaysRemaining(m.nextCalDate);
+        return m.status === 'Calibrado' && (d === null || d >= 0);
+      }).length;
+      const calRate = mets.length ? ((validMets / mets.length) * 100).toFixed(1) : '100.0';
+
+      const intactBars = bars.filter(b => b.integrityStatus === 'Íntegra').length;
+      const barrierRate = bars.length ? ((intactBars / bars.length) * 100).toFixed(1) : '100.0';
+
+      const totalInvValue = invs.reduce((acc, item) => acc + (item.currentStock * item.unitCost), 0);
+
+      // Render 7 KPI Cards
+      const kpis = [
+        { label: 'Activos Taxonomía', val: totalAssets, sub: '7 Niveles ISO 14224', icon: 'fa-industry', color: 'sky' },
+        { label: 'OTs Activas / Abiertas', val: openWos, sub: `De ${wos.length} OTs registradas`, icon: 'fa-wrench', color: 'amber' },
+        { label: 'Downtime Acumulado', val: `${totalDowntimeSum.toFixed(1)} h`, sub: 'Indisponibilidad Total', icon: 'fa-clock-rotate-left', color: 'rose' },
+        { label: 'Disponibilidad Ao', val: `${avgAvailability}%`, sub: 'Meta ISO 13306 ≥ 95%', icon: 'fa-heart-pulse', color: parseFloat(avgAvailability) >= 95 ? 'emerald' : 'amber' },
+        { label: 'Calibraciones Vigentes', val: `${calRate}%`, sub: `${validMets}/${mets.length} ISO/IEC 17025`, icon: 'fa-ruler-combined', color: parseFloat(calRate) >= 85 ? 'emerald' : 'rose' },
+        { label: 'Barreras Íntegras', val: `${barrierRate}%`, sub: `${intactBars}/${bars.length} ISO 16530-1`, icon: 'fa-shield-halved', color: parseFloat(barrierRate) >= 80 ? 'violet' : 'amber' },
+        { label: 'Valor Inventario MRO', val: `$${totalInvValue.toLocaleString()}`, sub: 'Valoración ABC ISO 55001', icon: 'fa-boxes-stacked', color: 'cyan' }
+      ];
+
+      document.getElementById('kpiCardsContainer').innerHTML = kpis.map(k => `
+        <div class="bg-slate-900 border border-slate-800 hover:border-${k.color}-500/50 rounded-2xl p-3.5 shadow-lg transition">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">${k.label}</span>
+            <span class="w-7 h-7 rounded-lg bg-${k.color}-500/10 text-${k.color}-400 flex items-center justify-center text-xs">
+              <i class="fa-solid ${k.icon}"></i>
+            </span>
+          </div>
+          <div class="text-xl font-extrabold text-white font-mono mt-1.5">${k.val}</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">${k.sub}</div>
+        </div>
+      `).join('');
+
+      // Render Date Radar (Upcoming/Expired Deadlines across all modules)
+      const events = [];
+      mets.forEach(m => events.push({
+        type: 'Calibración ISO 17025',
+        title: `${m.tag} (${m.magnitude})`,
+        date: m.nextCalDate,
+        days: getDaysRemaining(m.nextCalDate),
+        tab: 'iso_compliance'
+      }));
+      assets.forEach(a => events.push({
+        type: 'Próximo PM ISO 13306',
+        title: `${a.l5_equipment}`,
+        date: a.next_pm_date,
+        days: getDaysRemaining(a.next_pm_date),
+        tab: 'taxonomy'
+      }));
+      bars.forEach(b => events.push({
+        type: 'Vencimiento MOC §7',
+        title: `${b.id} - ${b.name}`,
+        date: b.mocExpiryDate,
+        days: getDaysRemaining(b.mocExpiryDate),
+        tab: 'iso_compliance'
+      }));
+      events.sort((a, b) => (a.days ?? 999) - (b.days ?? 999));
+
+      document.getElementById('dateRadarContainer').innerHTML = events.slice(0, 8).map(ev => `
+        <div onclick="switchTab('${ev.tab}')" class="cursor-pointer bg-slate-950 border border-slate-800 hover:border-sky-500/50 rounded-xl p-3 flex flex-col justify-between transition">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-sky-400">${ev.type}</span>
+            ${getDateStatusBadge(ev.days)}
+          </div>
+          <div class="text-xs font-semibold text-slate-200 mt-1.5 truncate" title="${ev.title}">${ev.title}</div>
+          <div class="text-[11px] font-mono text-slate-400 mt-1 flex items-center gap-1.5">
+            <i class="fa-regular fa-calendar-check text-slate-500"></i> Fecha Límite: <span class="text-slate-200">${ev.date}</span>
+          </div>
+        </div>
+      `).join('');
+
+      // Render Summary Failure Modes Table
+      const fmStats = {};
+      FAILURE_MODES_ISO14224.forEach(fm => {
+        fmStats[fm.code] = { ...fm, count: 0, downtime: 0, mttrSum: 0 };
+      });
+      wos.forEach(w => {
+        const m = calculateWorkOrderMetrics(w);
+        if (fmStats[w.failureCode]) {
+          fmStats[w.failureCode].count += 1;
+          fmStats[w.failureCode].downtime += m.totalDowntime;
+          fmStats[w.failureCode].mttrSum += m.mttr;
+        }
+      });
+
+      const activeFms = Object.values(fmStats).filter(f => f.count > 0 || appState.globalSearch === '');
+      document.getElementById('summaryFailureModesBody').innerHTML = activeFms.slice(0, 7).map(f => `
+        <tr class="hover:bg-slate-850/60">
+          <td class="p-2.5 font-mono font-bold text-rose-400">${f.code}</td>
+          <td class="p-2.5 text-slate-200">${f.name}</td>
+          <td class="p-2.5 text-center font-mono">${f.count}</td>
+          <td class="p-2.5 text-right font-mono text-amber-300">${f.downtime.toFixed(1)} h</td>
+          <td class="p-2.5 text-right font-mono text-slate-300">${f.count ? (f.mttrSum / f.count).toFixed(1) : '0.0'} h</td>
+        </tr>
+      `).join('');
+
+      // Render Summary Maintenance Types Table
+      const mtStats = {};
+      MAINTENANCE_TYPES_ISO13306.forEach(mt => {
+        mtStats[mt.code] = { ...mt, count: 0, downtime: 0, cost: 0 };
+      });
+      wos.forEach(w => {
+        const m = calculateWorkOrderMetrics(w);
+        if (mtStats[w.maintType]) {
+          mtStats[w.maintType].count += 1;
+          mtStats[w.maintType].downtime += m.totalDowntime;
+          mtStats[w.maintType].cost += (parseFloat(w.costUsd) || 0);
+        }
+      });
+
+      document.getElementById('summaryMaintTypesBody').innerHTML = Object.values(mtStats).map(mt => `
+        <tr class="hover:bg-slate-850/60">
+          <td class="p-2.5 font-mono font-bold text-sky-400">${mt.code}</td>
+          <td class="p-2.5 text-slate-200">${mt.name}</td>
+          <td class="p-2.5 text-center font-mono">${mt.count}</td>
+          <td class="p-2.5 text-right font-mono text-amber-300">${mt.downtime.toFixed(1)} h</td>
+          <td class="p-2.5 text-right font-mono text-emerald-400">$${mt.cost.toLocaleString()}</td>
+        </tr>
+      `).join('');
+
+      renderDashboardCharts(fmStats, wos);
+    }
+
+    function renderDashboardCharts(fmStats, wos) {
+      // 1. Failure Modes Downtime Chart
+      const ctx1 = document.getElementById('chartFailureDowntime');
+      if (ctx1) {
+        if (charts.failureDowntime) charts.failureDowntime.destroy();
+        const labels = Object.values(fmStats).map(f => f.code);
+        const data = Object.values(fmStats).map(f => +f.downtime.toFixed(1));
+        charts.failureDowntime = new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Downtime (Horas)',
+              data,
+              backgroundColor: 'rgba(244, 63, 94, 0.7)',
+              borderColor: '#f43f5e',
+              borderWidth: 1,
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+              y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } }
+            }
+          }
+        });
+      }
+
+      // 2. Vibration vs Temperature Chart
+      const ctx2 = document.getElementById('chartVibrationTemp');
+      if (ctx2) {
+        if (charts.vibrationTemp) charts.vibrationTemp.destroy();
+        const cbmList = appState.db.cbmReadings.filter(c => matchesGlobalFilters(c, 'timestamp'));
+        charts.vibrationTemp = new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: cbmList.map(c => c.equipment.split(' ')[0] + ' (' + c.subsystem.slice(0, 8) + ')'),
+            datasets: [
+              {
+                label: 'Vibración RMS (mm/s)',
+                data: cbmList.map(c => c.vibration_rms),
+                backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                borderRadius: 6,
+                yAxisID: 'y'
+              },
+              {
+                label: 'Temp Cojinete (°C)',
+                data: cbmList.map(c => c.bearing_temp),
+                backgroundColor: 'rgba(14, 165, 233, 0.75)',
+                borderRadius: 6,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 10 } } } },
+            scales: {
+              x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+              y: { position: 'left', ticks: { color: '#fbbf24', font: { size: 10 } }, grid: { color: '#1e293b' } },
+              y1: { position: 'right', ticks: { color: '#38bdf8', font: { size: 10 } }, grid: { display: false } }
+            }
+          }
+        });
+      }
+
+      // 3. Availability by Equipment Chart
+      const ctx3 = document.getElementById('chartAvailability');
+      if (ctx3) {
+        if (charts.availability) charts.availability.destroy();
+        const eqMap = {};
+        wos.forEach(w => {
+          const m = calculateWorkOrderMetrics(w);
+          const tag = w.equipment.split(' ')[0];
+          if (!eqMap[tag]) eqMap[tag] = [];
+          eqMap[tag].push(m.availability);
+        });
+        const labels = Object.keys(eqMap);
+        const avgs = labels.map(k => +(eqMap[k].reduce((a, b) => a + b, 0) / eqMap[k].length).toFixed(2));
+
+        charts.availability = new Chart(ctx3, {
+          type: 'line',
+          data: {
+            labels: labels.length ? labels : ['Sin Datos'],
+            datasets: [{
+              label: 'Disponibilidad Ao (%)',
+              data: avgs.length ? avgs : [100],
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+              fill: true,
+              tension: 0.35,
+              pointRadius: 5,
+              pointBackgroundColor: '#10b981'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 10 } } } },
+            scales: {
+              x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+              y: { min: 90, max: 100, ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } }
+            }
+          }
+        });
+      }
+    }
+
+    // ==================== RENDER VIEW 2: TAXONOMÍA ISO 14224 (7 NIVELES) ====================
+    function renderTaxonomyView() {
+      const assets = appState.db.assets.filter(a => matchesGlobalFilters(a, 'install_date'));
+      document.getElementById('treeAssetCount').textContent = `${assets.length} activos registrados`;
+
+      // Render 7-Level Interactive Tree
+      const treeHtml = assets.map(a => {
+        const isSelected = a.id === appState.selectedAssetId;
+        return `
+          <div onclick="selectAsset('${a.id}')" class="cursor-pointer rounded-xl border p-3 transition ${isSelected ? 'bg-sky-950/40 border-sky-500 shadow-md' : 'bg-slate-950 border-slate-800 hover:border-slate-700'}">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono text-slate-400"><i class="fa-solid fa-globe text-sky-400 mr-1"></i>N1: ${a.l1_industry}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${a.criticality === 'A' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'}">Criticidad ${a.criticality}</span>
+            </div>
+            <div class="pl-2 mt-1 border-l border-slate-700 space-y-1 text-[11px]">
+              <div class="text-slate-300"><span class="text-slate-500 font-mono">N2 Planta:</span> ${a.l2_plant}</div>
+              <div class="pl-2 border-l border-slate-700 text-slate-300"><span class="text-slate-500 font-mono">N3 Sección:</span> ${a.l3_section}</div>
+              <div class="pl-4 border-l border-slate-700 text-slate-300"><span class="text-slate-500 font-mono">N4 Unidad:</span> ${a.l4_unit}</div>
+              <div class="pl-6 border-l border-sky-500/50 text-amber-300 font-bold"><span class="text-slate-500 font-mono font-normal">N5 Equipo:</span> ${a.l5_equipment}</div>
+              <div class="pl-8 border-l border-slate-700 text-slate-200"><span class="text-slate-500 font-mono">N6 Subsistema:</span> ${a.l6_subsystem}</div>
+              <div class="pl-10 border-l border-emerald-500/50 text-emerald-400 font-semibold"><span class="text-slate-500 font-mono font-normal">N7 Componente:</span> ${a.l7_component}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('taxonomyTreeContainer').innerHTML = treeHtml || `<p class="text-slate-500 text-xs">No hay activos que coincidan con el filtro.</p>`;
+
+      // Selected Asset Datasheet
+      const selected = assets.find(a => a.id === appState.selectedAssetId) || assets[0];
+      const cardEl = document.getElementById('selectedAssetCard');
+      if (selected) {
+        const pmDays = getDaysRemaining(selected.next_pm_date);
+        cardEl.innerHTML = `
+          <div class="flex flex-wrap items-start justify-between gap-2 pb-3 border-b border-slate-800">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono text-xs font-bold">${selected.id}</span>
+                <h3 class="text-sm font-bold text-white">${selected.l5_equipment} &mdash; ${selected.l7_component}</h3>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">${selected.manufacturer} • Modelo: ${selected.model} • S/N: ${selected.serial}</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              ${getDateStatusBadge(pmDays)}
+              <button onclick="openModal('asset', '${selected.id}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-sky-600 text-xs text-slate-200 transition">
+                <i class="fa-solid fa-pen-to-square mr-1"></i>Editar
+              </button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 text-xs">
+            <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+              <div class="text-[10px] text-slate-500 uppercase">Potencia / MAWP</div>
+              <div class="font-mono font-semibold text-slate-200 mt-0.5">${selected.power}</div>
+              <div class="font-mono text-[11px] text-sky-400">${selected.mawp}</div>
+            </div>
+            <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+              <div class="text-[10px] text-slate-500 uppercase">Lubricante ISO 3448</div>
+              <div class="font-mono font-semibold text-teal-300 mt-0.5">${selected.lubricant_iso3448}</div>
+              <div class="text-[11px] text-slate-400">Estado: ${selected.status}</div>
+            </div>
+            <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+              <div class="text-[10px] text-slate-500 uppercase">Puesta en Marcha / Edad</div>
+              <div class="font-mono font-semibold text-slate-200 mt-0.5">${selected.install_date}</div>
+              <div class="text-[11px] text-amber-400">Edad: ${calculateAssetAgeYears(selected.install_date)}</div>
+            </div>
+            <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+              <div class="text-[10px] text-slate-500 uppercase">Garantía / Próximo PM</div>
+              <div class="font-mono text-[11px] text-slate-300 mt-0.5">Gar: ${selected.warranty_end}</div>
+              <div class="font-mono text-[11px] text-emerald-400">PM: ${selected.next_pm_date}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        cardEl.innerHTML = `<p class="text-xs text-slate-400">Seleccione un activo del árbol taxonómico.</p>`;
+      }
+
+      // Assets Table
+      document.getElementById('assetsTableBody').innerHTML = assets.map(a => `
+        <tr onclick="selectAsset('${a.id}')" class="cursor-pointer hover:bg-slate-850/70">
+          <td class="p-2.5">
+            <div class="font-bold text-amber-300">${a.l5_equipment}</div>
+            <div class="text-[11px] text-emerald-400">${a.l7_component}</div>
+          </td>
+          <td class="p-2.5 text-slate-300 text-[11px]">
+            <div>${a.l3_section}</div>
+            <div class="text-slate-500">${a.l6_subsystem}</div>
+          </td>
+          <td class="p-2.5 font-mono text-[11px] text-teal-300">${a.lubricant_iso3448}</td>
+          <td class="p-2.5 font-mono text-[11px]">
+            <div>${a.install_date}</div>
+            <div class="text-slate-400">${calculateAssetAgeYears(a.install_date)}</div>
+          </td>
+          <td class="p-2.5 text-center">
+            <span class="px-2 py-0.5 rounded font-bold text-[10px] ${a.criticality === 'A' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'}">${a.criticality}</span>
+          </td>
+          <td class="p-2.5 text-right space-x-1" onclick="event.stopPropagation()">
+            <button onclick="openModal('asset', '${a.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white"><i class="fa-solid fa-pen"></i></button>
+            <button onclick="deleteRecord('assets', '${a.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function selectAsset(id) {
+      appState.selectedAssetId = id;
+      renderTaxonomyView();
+    }
+
+    // ==================== RENDER VIEW 3: CBM & TRIBOLOGÍA ====================
+    function renderCbmView() {
+      const list = appState.db.cbmReadings.filter(c => matchesGlobalFilters(c, 'timestamp'));
+      document.getElementById('cbmTableBody').innerHTML = list.map(c => {
+        const z = getIso20816Zone(c.vibration_rms);
+        return `
+          <tr class="hover:bg-slate-850/70">
+            <td class="p-2.5 font-mono text-[11px] text-slate-300">${c.timestamp.replace('T', ' ')}</td>
+            <td class="p-2.5">
+              <div class="font-bold text-slate-200">${c.equipment}</div>
+              <div class="text-[11px] text-slate-400">${c.subsystem}</div>
+            </td>
+            <td class="p-2.5 text-right font-mono text-slate-200">${c.running_hours.toLocaleString()} h</td>
+            <td class="p-2.5 text-right font-mono font-bold text-amber-300">${c.vibration_rms} mm/s</td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded-full border text-[10px] font-bold ${z.cls}">${z.zone} (${z.label})</span>
+            </td>
+            <td class="p-2.5 text-right font-mono text-[11px]">
+              <span class="${c.bearing_temp > 80 ? 'text-rose-400 font-bold' : 'text-slate-200'}">${c.bearing_temp}°C</span> /
+              <span class="text-sky-400">${c.oil_temp}°C</span>
+            </td>
+            <td class="p-2.5 text-right font-mono text-[11px] text-slate-300">${c.suction_psi} / ${c.discharge_psi} PSI</td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded bg-orange-500/15 border border-orange-500/30 text-orange-300 font-mono text-[11px] font-bold">${c.oil_cleanliness}</span>
+            </td>
+            <td class="p-2.5 text-right space-x-1">
+              <button onclick="openModal('cbm', '${c.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteRecord('cbmReadings', '${c.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ==================== RENDER VIEW 4: WORK ORDERS, FAILURE MODES & DOWNTIME ====================
+    function renderWorkOrdersView() {
+      // Populate Failure Mode Filter Dropdown once
+      const fmSelect = document.getElementById('woFailureModeFilter');
+      if (fmSelect && fmSelect.options.length <= 1) {
+        FAILURE_MODES_ISO14224.forEach(fm => {
+          const opt = document.createElement('option');
+          opt.value = fm.code;
+          opt.textContent = `${fm.code} - ${fm.name}`;
+          fmSelect.appendChild(opt);
+        });
+      }
+
+      const mtFilter = document.getElementById('woMaintTypeFilter').value;
+      const fmFilter = document.getElementById('woFailureModeFilter').value;
+      const stFilter = document.getElementById('woStatusFilter').value;
+
+      let wos = appState.db.workOrders.filter(w => matchesGlobalFilters(w, 'detectedDate'));
+      if (mtFilter !== 'ALL') wos = wos.filter(w => w.maintType === mtFilter);
+      if (fmFilter !== 'ALL') wos = wos.filter(w => w.failureCode === fmFilter);
+      if (stFilter !== 'ALL') wos = wos.filter(w => w.status === stFilter);
+
+      // Compute Strip KPIs
+      let sumDowntime = 0, sumRepair = 0, sumLdt = 0, sumMtbf = 0, sumAvail = 0;
+      wos.forEach(w => {
+        const m = calculateWorkOrderMetrics(w);
+        sumDowntime += m.totalDowntime;
+        sumRepair += m.activeRepairTime;
+        sumLdt += m.ldt;
+        sumMtbf += m.mtbf;
+        sumAvail += m.availability;
+      });
+      const n = wos.length || 1;
+      document.getElementById('downtimeKpiStrip').innerHTML = [
+        { label: 'Downtime Total (h)', val: `${sumDowntime.toFixed(2)} h`, color: 'rose' },
+        { label: 'Reparación Activa (MTTM)', val: `${sumRepair.toFixed(2)} h`, color: 'amber' },
+        { label: 'Espera Logística (LDT)', val: `${sumLdt.toFixed(2)} h`, color: 'orange' },
+        { label: 'MTTR / MTBF Promedio', val: `${(sumRepair / n).toFixed(1)}h / ${(sumMtbf / n).toFixed(0)}h`, color: 'sky' },
+        { label: 'Disponibilidad Operacional Ao', val: `${(sumAvail / n).toFixed(2)}%`, color: 'emerald' }
+      ].map(c => `
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+          <div class="text-[10px] uppercase font-semibold text-slate-400">${c.label}</div>
+          <div class="text-lg font-extrabold font-mono text-${c.color}-400 mt-1">${c.val}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('workOrdersTableBody').innerHTML = wos.map(w => {
+        const m = calculateWorkOrderMetrics(w);
+        const fmObj = FAILURE_MODES_ISO14224.find(f => f.code === w.failureCode);
+        const statusCls = w.status === 'Cerrada'
+          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+          : w.status === 'En Ejecución'
+            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+            : 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+
+        return `
+          <tr class="hover:bg-slate-850/70">
+            <td class="p-2.5">
+              <div class="font-mono font-bold text-sky-400">${w.id}</div>
+              <div class="text-[10px] text-slate-400">${w.priority}</div>
+            </td>
+            <td class="p-2.5">
+              <div class="font-semibold text-slate-200">${w.equipment}</div>
+              <div class="text-[11px] text-slate-400">${w.component}</div>
+            </td>
+            <td class="p-2.5">
+              <span class="px-2 py-0.5 rounded bg-sky-500/15 border border-sky-500/30 text-sky-300 font-mono font-bold text-[11px]">${w.maintType}</span>
+            </td>
+            <td class="p-2.5">
+              <span class="px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-300 font-mono font-bold text-[11px]">${w.failureCode}</span>
+              <div class="text-[10px] text-slate-400 mt-0.5">${fmObj ? fmObj.name : ''}</div>
+            </td>
+            <td class="p-2.5 font-mono text-[10px] text-slate-300 space-y-0.5">
+              <div><span class="text-slate-500">Aviso:</span> ${w.detectedDate.replace('T', ' ')}</div>
+              <div><span class="text-slate-500">Inicio:</span> ${w.startDate ? w.startDate.replace('T', ' ') : 'Pendiente'}</div>
+              <div><span class="text-slate-500">Fin:</span> ${w.endDate ? w.endDate.replace('T', ' ') : '<span class="text-amber-400">En Curso</span>'}</div>
+            </td>
+            <td class="p-2.5 text-right font-mono text-[11px]">
+              <div class="font-bold text-rose-400">${m.totalDowntime} h DT</div>
+              <div class="text-slate-400">MTTR: ${m.mttr}h (LDT: ${m.ldt}h)</div>
+            </td>
+            <td class="p-2.5 text-right font-mono text-[11px]">
+              <div class="text-slate-200">${m.mtbf} h</div>
+              <div class="font-bold text-emerald-400">${m.availability}%</div>
+            </td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded-full border text-[10px] font-semibold ${statusCls}">${w.status}</span>
+            </td>
+            <td class="p-2.5 text-right space-x-1">
+              <button onclick="openModal('workorder', '${w.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteRecord('workOrders', '${w.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ==================== RENDER VIEW 5: ISO COMPLIANCE, METROLOGY & BARRIERS ====================
+    function renderIsoComplianceView() {
+      // 8 ISO Cards
+      document.getElementById('isoStandardsCardsContainer').innerHTML = ISO_STANDARDS_CATALOG.map(std => {
+        const isSelected = appState.masterIso === std.code;
+        return `
+          <div onclick="filterByIsoCard('${std.code}')" class="cursor-pointer rounded-2xl border p-3.5 transition ${isSelected ? 'bg-sky-950/50 border-sky-400 shadow-lg' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 rounded bg-${std.color}-500/15 border border-${std.color}-500/30 text-${std.color}-300 font-mono text-xs font-bold">${std.title}</span>
+              <span class="text-[10px] font-mono text-slate-400">${std.vars}</span>
+            </div>
+            <p class="text-xs text-slate-300 mt-2 leading-relaxed">${std.scope}</p>
+          </div>
+        `;
+      }).join('');
+
+      // Metrology Table
+      const mets = appState.db.metrology.filter(m => matchesGlobalFilters(m, 'nextCalDate'));
+      document.getElementById('metrologyTableBody').innerHTML = mets.map(m => {
+        const days = getDaysRemaining(m.nextCalDate);
+        return `
+          <tr class="hover:bg-slate-850/70">
+            <td class="p-2.5 font-mono font-bold text-sky-400">${m.tag}</td>
+            <td class="p-2.5 text-slate-200">${m.equipment}</td>
+            <td class="p-2.5">
+              <div class="text-slate-200">${m.magnitude}</div>
+              <div class="font-mono text-[10px] text-slate-400">${m.range}</div>
+            </td>
+            <td class="p-2.5 font-mono text-[11px] text-slate-300">${m.lastCalDate}</td>
+            <td class="p-2.5 font-mono text-[11px] text-slate-200">${m.nextCalDate}</td>
+            <td class="p-2.5 text-center">${getDateStatusBadge(days)}</td>
+            <td class="p-2.5 font-mono text-[11px]">
+              <div class="text-emerald-300">${m.uncertainty}</div>
+              <div class="text-[10px] text-slate-400">${m.certNumber}</div>
+            </td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${days !== null && days < 0 ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}">
+                ${days !== null && days < 0 ? 'Vencido' : m.status}
+              </span>
+            </td>
+            <td class="p-2.5 text-right space-x-1">
+              <button onclick="openModal('metrology', '${m.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteRecord('metrology', '${m.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Barriers Table
+      const bars = appState.db.barriers.filter(b => matchesGlobalFilters(b, 'lastAuditDate'));
+      document.getElementById('barriersTableBody').innerHTML = bars.map(b => {
+        const mocDays = getDaysRemaining(b.mocExpiryDate);
+        return `
+          <tr class="hover:bg-slate-850/70">
+            <td class="p-2.5">
+              <div class="font-mono font-bold text-violet-400">${b.id}</div>
+              <div class="text-slate-200">${b.name}</div>
+            </td>
+            <td class="p-2.5 text-slate-300">${b.barrierType}</td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${b.integrityStatus === 'Íntegra' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">${b.integrityStatus}</span>
+            </td>
+            <td class="p-2.5 text-center font-mono">
+              <span class="${b.auditDemerits > 35 ? 'text-amber-400 font-bold' : 'text-emerald-400'}">${b.auditDemerits}</span> / 75
+            </td>
+            <td class="p-2.5 text-center text-[11px] font-semibold text-sky-300">${b.rtolStatus}</td>
+            <td class="p-2.5 font-mono text-[11px]">
+              <div>Aud: ${b.lastAuditDate}</div>
+              <div class="flex items-center gap-1 mt-0.5">MOC: ${b.mocExpiryDate} ${getDateStatusBadge(mocDays)}</div>
+            </td>
+            <td class="p-2.5 text-center font-mono text-slate-200">${b.trirIndex}</td>
+            <td class="p-2.5 text-right space-x-1">
+              <button onclick="openModal('barrier', '${b.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteRecord('barriers', '${b.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterByIsoCard(isoCode) {
+      const sel = document.getElementById('masterIsoFilter');
+      sel.value = sel.value === isoCode ? 'ALL' : isoCode;
+      handleGlobalFilterChange();
+    }
+
+    // ==================== RENDER VIEW 6: DICTIONARY 200 VARS & MRO INVENTORY ====================
+    function renderDictionaryView() {
+      // MRO Inventory Table
+      const invs = appState.db.inventory.filter(i => matchesGlobalFilters(i, 'lastRestockDate'));
+      document.getElementById('inventoryTableBody').innerHTML = invs.map(i => {
+        const lowStock = i.currentStock <= i.reorderPoint;
+        const totalVal = i.currentStock * i.unitCost;
+        return `
+          <tr class="hover:bg-slate-850/70">
+            <td class="p-2.5">
+              <div class="font-mono font-bold text-cyan-400">${i.sku}</div>
+              <div class="text-[10px] text-slate-400">${i.equipment}</div>
+            </td>
+            <td class="p-2.5 text-slate-200">${i.description}</td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded font-bold text-[10px] ${i.abcClass === 'A' ? 'bg-rose-500/20 text-rose-300' : i.abcClass === 'B' ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-700 text-slate-300'}">Clase ${i.abcClass}</span>
+            </td>
+            <td class="p-2.5 text-right font-mono">
+              <span class="${lowStock ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}">${i.currentStock}</span> / ${i.minStock}
+              ${lowStock ? '<div class="text-[9px] text-rose-400 uppercase">Reordenar!</div>' : ''}
+            </td>
+            <td class="p-2.5 text-right font-mono text-slate-300">$${i.unitCost.toLocaleString()}</td>
+            <td class="p-2.5 text-right font-mono font-bold text-emerald-400">$${totalVal.toLocaleString()}</td>
+            <td class="p-2.5 text-[11px] text-slate-300">
+              <div class="font-mono text-slate-400">Rep: ${i.lastRestockDate}</div>
+              <div>${i.warehouseLoc}</div>
+            </td>
+            <td class="p-2.5 text-right space-x-1">
+              <button onclick="openModal('inventory', '${i.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="deleteRecord('inventory', '${i.id}')" class="p-1.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      renderDictionaryTable();
+    }
+
+    function renderDictionaryTable() {
+      const modFilter = document.getElementById('dictModuleFilter').value;
+      let vars = appState.db.dictionary200.filter(v => matchesGlobalFilters(v, 'updatedAt'));
+      if (modFilter !== 'ALL') {
+        vars = vars.filter(v => String(v.moduleNum) === modFilter);
+      }
+
+      document.getElementById('dictionaryTableBody').innerHTML = vars.map(v => `
+        <tr class="hover:bg-slate-850/70">
+          <td class="p-2 font-mono font-bold text-sky-400">VAR-${String(v.varNum).padStart(3, '0')}</td>
+          <td class="p-2 text-[11px] text-slate-400">M${v.moduleNum}: ${v.moduleName}</td>
+          <td class="p-2 font-medium text-slate-200">${v.name}</td>
+          <td class="p-2"><span class="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 font-mono text-[10px]">${v.isoStandard}</span></td>
+          <td class="p-2 text-[11px] text-slate-400">${v.assetRef}</td>
+          <td class="p-2">
+            <input
+              type="text"
+              value="${v.value}"
+              onchange="updateDictionaryVariable(${v.varNum}, this.value)"
+              class="bg-slate-950 border border-slate-700 focus:border-sky-500 rounded px-2 py-1 font-mono text-xs text-emerald-300 w-40 focus:outline-none"
+            />
+          </td>
+          <td class="p-2 font-mono text-[11px] text-slate-400">${v.unit}</td>
+          <td class="p-2 font-mono text-[11px] text-slate-400">${v.updatedAt}</td>
+        </tr>
+      `).join('');
+    }
+
+    function updateDictionaryVariable(varNum, newValue) {
+      const target = appState.db.dictionary200.find(v => v.varNum === varNum);
+      if (target) {
+        target.value = newValue;
+        target.updatedAt = new Date().toISOString().slice(0, 10);
+        saveDatabase(true);
+      }
+    }
+
+    // ==================== UNIVERSAL MODAL FORMS (CREATE & EDIT) ====================
+    let currentModalContext = { entity: null, editId: null };
+
+    function openModal(entity, editId = null) {
+      currentModalContext = { entity, editId };
+      const modal = document.getElementById('crudModal');
+      const titleEl = document.getElementById('modalTitle');
+      const formEl = document.getElementById('modalForm');
+
+      let item = {};
+      if (editId) {
+        const map = {
+          asset: appState.db.assets,
+          cbm: appState.db.cbmReadings,
+          workorder: appState.db.workOrders,
+          metrology: appState.db.metrology,
+          barrier: appState.db.barriers,
+          inventory: appState.db.inventory
+        };
+        item = map[entity].find(x => x.id === editId) || {};
+      }
+
+      if (entity === 'asset') {
+        titleEl.innerHTML = `<i class="fa-solid fa-sitemap text-emerald-400"></i> ${editId ? 'Editar' : 'Registrar'} Activo Taxonomía ISO 14224 (7 Niveles)`;
+        formEl.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label class="text-slate-400 block mb-1">Nivel 1: Industria</label><input name="l1_industry" required value="${item.l1_industry || 'Petróleo y Gas - Upstream / Perforación'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Nivel 2: Planta / Taladro</label><input name="l2_plant" required value="${item.l2_plant || 'Taladro Drillmec G 200 (Rig-204)'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Nivel 3: Sección / Sistema</label><input name="l3_section" required value="${item.l3_section || 'Sistema de Circulación de Lodos'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Nivel 4: Unidad Funcional</label><input name="l4_unit" required value="${item.l4_unit || 'Unidad de Bombeo Triplex A'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-amber-300 font-semibold block mb-1">Nivel 5: Equipo / Tag</label><input name="l5_equipment" required value="${item.l5_equipment || ''}" placeholder="Ej. P-101B Bomba Triplex" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Nivel 6: Subsistema</label><input name="l6_subsystem" required value="${item.l6_subsystem || ''}" placeholder="Ej. Extremo Hidráulico" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-emerald-300 font-semibold block mb-1">Nivel 7: Componente Mantenible</label><input name="l7_component" required value="${item.l7_component || ''}" placeholder="Ej. Válvula Succión/Descarga" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Lubricante ISO 3448</label><input name="lubricant_iso3448" value="${item.lubricant_iso3448 || 'ISO VG 220 Sintético'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Fabricante / Modelo</label><input name="manufacturer" value="${item.manufacturer || 'Drillmec / OEM'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Criticidad ISO 55001</label>
+              <select name="criticality" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
+                <option value="A" ${item.criticality === 'A' ? 'selected' : ''}>A - Crítico</option>
+                <option value="B" ${item.criticality === 'B' ? 'selected' : ''}>B - Semicrítico</option>
+                <option value="C" ${item.criticality === 'C' ? 'selected' : ''}>C - No Crítico</option>
+              </select>
+            </div>
+            <div><label class="text-slate-400 block mb-1">Fecha Puesta en Marcha</label><input type="date" name="install_date" value="${item.install_date || '2023-05-10'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Próxima Intervención PM</label><input type="date" name="next_pm_date" value="${item.next_pm_date || '2026-12-15'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+          </div>
+          ${modalFooterButtons()}
+        `;
+      } else if (entity === 'cbm') {
+        titleEl.innerHTML = `<i class="fa-solid fa-wave-square text-amber-400"></i> ${editId ? 'Editar' : 'Registrar'} Lectura Telemetría CBM (ISO 20816 / 4406)`;
+        const eqOpts = appState.db.assets.map(a => `<option value="${a.l5_equipment}" ${item.equipment === a.l5_equipment ? 'selected' : ''}>${a.l5_equipment} (${a.l6_subsystem})</option>`).join('');
+        formEl.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label class="text-slate-400 block mb-1">Fecha / Hora Lectura</label><input type="datetime-local" name="timestamp" required value="${item.timestamp || '2026-11-15T14:00'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Equipo / Tag</label><select name="equipment" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">${eqOpts}</select></div>
+            <div><label class="text-slate-400 block mb-1">Subsistema</label><input name="subsystem" required value="${item.subsystem || 'Extremo de Potencia'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Horómetro Acumulado (h)</label><input type="number" name="running_hours" required value="${item.running_hours || 15000}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-amber-300 font-semibold block mb-1">Vibración RMS (mm/s - ISO 20816)</label><input type="number" step="0.1" name="vibration_rms" required value="${item.vibration_rms || 3.2}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-orange-300 font-semibold block mb-1">Código Limpieza Aceite ISO 4406</label><input name="oil_cleanliness" required value="${item.oil_cleanliness || '16/14/11'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Temp. Cojinete (°C)</label><input type="number" step="0.1" name="bearing_temp" value="${item.bearing_temp || 68.0}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Temp. Aceite (°C)</label><input type="number" step="0.1" name="oil_temp" value="${item.oil_temp || 60.0}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Presión Succión (PSI)</label><input type="number" name="suction_psi" value="${item.suction_psi || 45}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Presión Descarga (PSI)</label><input type="number" name="discharge_psi" value="${item.discharge_psi || 3200}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+          </div>
+          ${modalFooterButtons()}
+        `;
+      } else if (entity === 'workorder') {
+        titleEl.innerHTML = `<i class="fa-solid fa-screwdriver-wrench text-rose-400"></i> ${editId ? 'Editar' : 'Nueva'} Orden de Trabajo, Falla & Downtime`;
+        const eqOpts = appState.db.assets.map(a => `<option value="${a.l5_equipment}" ${item.equipment === a.l5_equipment ? 'selected' : ''}>${a.l5_equipment}</option>`).join('');
+        const mtOpts = MAINTENANCE_TYPES_ISO13306.map(m => `<option value="${m.code}" ${item.maintType === m.code ? 'selected' : ''}>${m.code} - ${m.name}</option>`).join('');
+        const fmOpts = FAILURE_MODES_ISO14224.map(f => `<option value="${f.code}" ${item.failureCode === f.code ? 'selected' : ''}>${f.code} - ${f.name}</option>`).join('');
+        formEl.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label class="text-slate-400 block mb-1">Equipo (Nivel 5)</label><select name="equipment" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">${eqOpts}</select></div>
+            <div><label class="text-slate-400 block mb-1">Componente (Nivel 7)</label><input name="component" required value="${item.component || 'Camisa / Pistón Cerámico 6.5"'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-sky-300 font-semibold block mb-1">Tipo Mantenimiento (ISO 13306)</label><select name="maintType" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">${mtOpts}</select></div>
+            <div><label class="text-rose-300 font-semibold block mb-1">Modo de Falla (ISO 14224)</label><select name="failureCode" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">${fmOpts}</select></div>
+            <div><label class="text-slate-400 block mb-1">Fecha/Hora Detección / Aviso</label><input type="datetime-local" name="detectedDate" required value="${item.detectedDate || '2026-11-15T08:00'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Fecha/Hora Programada</label><input type="datetime-local" name="scheduledDate" value="${item.scheduledDate || '2026-11-15T10:00'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Fecha/Hora Inicio Real</label><input type="datetime-local" name="startDate" value="${item.startDate || '2026-11-15T09:30'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Fecha/Hora Fin Real (Vacío si abierta)</label><input type="datetime-local" name="endDate" value="${item.endDate || ''}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Espera Logística LDT (Horas)</label><input type="number" step="0.5" name="logisticWaitHours" value="${item.logisticWaitHours ?? 1.5}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Tiempo Operación Previo (MTBF h)</label><input type="number" name="operatingTimeBeforeFailure" value="${item.operatingTimeBeforeFailure || 950}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Costo Intervención ($ USD)</label><input type="number" name="costUsd" value="${item.costUsd || 2500}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Estatus Orden de Trabajo</label>
+              <select name="status" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
+                <option value="Abierta" ${item.status === 'Abierta' ? 'selected' : ''}>Abierta</option>
+                <option value="En Ejecución" ${item.status === 'En Ejecución' ? 'selected' : ''}>En Ejecución</option>
+                <option value="Espera Repuestos" ${item.status === 'Espera Repuestos' ? 'selected' : ''}>Espera Repuestos</option>
+                <option value="Cerrada" ${item.status === 'Cerrada' ? 'selected' : ''}>Cerrada</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2"><label class="text-slate-400 block mb-1">Notas Técnicas / Causa Raíz</label><input name="notes" value="${item.notes || ''}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+          </div>
+          ${modalFooterButtons()}
+        `;
+      } else if (entity === 'metrology') {
+        titleEl.innerHTML = `<i class="fa-solid fa-ruler-combined text-sky-400"></i> ${editId ? 'Editar' : 'Registrar'} Instrumento ISO/IEC 17025`;
+        formEl.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label class="text-slate-400 block mb-1">Tag Instrumento</label><input name="tag" required value="${item.tag || 'PT-205A'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Equipo Asociado</label><input name="equipment" required value="${item.equipment || 'P-101A Bomba Triplex de Lodo'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Magnitud</label><input name="magnitude" required value="${item.magnitude || 'Presión Diferencial'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Rango Calibración</label><input name="range" required value="${item.range || '0 – 5,000 PSI'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Fecha Última Calibración</label><input type="date" name="lastCalDate" required value="${item.lastCalDate || '2026-11-01'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Fecha Próxima Calibración</label><input type="date" name="nextCalDate" required value="${item.nextCalDate || '2027-05-01'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Incertidumbre Expandida (U)</label><input name="uncertainty" value="${item.uncertainty || '± 0.12% FS'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">N° Certificado Trazable</label><input name="certNumber" value="${item.certNumber || 'CERT-ISO17025-2026'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+          </div>
+          ${modalFooterButtons()}
+        `;
+      } else if (entity === 'barrier') {
+        titleEl.innerHTML = `<i class="fa-solid fa-shield-halved text-violet-400"></i> ${editId ? 'Editar' : 'Registrar'} Barrera ISO 16530-1 / NORSOK D-010`;
+        formEl.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label class="text-slate-400 block mb-1">Nombre Elemento Barrera (WBE)</label><input name="name" required value="${item.name || ''}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Equipo / Conjunto</label><input name="equipment" required value="${item.equipment || 'BOP-STACK 13-5/8" 10K'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Tipo Barrera</label><input name="barrierType" value="${item.barrierType || 'Mecánica / Física'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Estado Integridad</label>
+              <select name="integrityStatus" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
+                <option value="Íntegra" ${item.integrityStatus === 'Íntegra' ? 'selected' : ''}>Íntegra</option>
+                <option value="Degradada" ${item.integrityStatus === 'Degradada' ? 'selected' : ''}>Degradada</option>
+              </select>
+            </div>
+            <div><label class="text-slate-400 block mb-1">Deméritos Auditoría (0-75)</label><input type="number" name="auditDemerits" value="${item.auditDemerits ?? 10}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Estado RtOL</label><input name="rtolStatus" value="${item.rtolStatus || 'Aprobado (RtOL OK)'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Fecha Última Auditoría</label><input type="date" name="lastAuditDate" value="${item.lastAuditDate || '2026-11-01'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Fecha Vencimiento MOC §7</label><input type="date" name="mocExpiryDate" value="${item.mocExpiryDate || '2027-02-01'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+          </div>
+          ${modalFooterButtons()}
+        `;
+      } else if (entity === 'inventory') {
+        titleEl.innerHTML = `<i class="fa-solid fa-boxes-stacked text-cyan-400"></i> ${editId ? 'Editar' : 'Registrar'} Repuesto MRO (ISO 55001)`;
+        formEl.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label class="text-slate-400 block mb-1">SKU / Código Parte</label><input name="sku" required value="${item.sku || 'SKU-NEW-001'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Clasificación ABC</label>
+              <select name="abcClass" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
+                <option value="A" ${item.abcClass === 'A' ? 'selected' : ''}>Clase A (Crítico)</option>
+                <option value="B" ${item.abcClass === 'B' ? 'selected' : ''}>Clase B (Moderado)</option>
+                <option value="C" ${item.abcClass === 'C' ? 'selected' : ''}>Clase C (Consumible)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2"><label class="text-slate-400 block mb-1">Descripción Repuesto</label><input name="description" required value="${item.description || ''}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Stock Actual</label><input type="number" name="currentStock" required value="${item.currentStock ?? 2}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Stock Mínimo / Reorden</label><input type="number" name="minStock" required value="${item.minStock ?? 2}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Costo Unitario ($ USD)</label><input type="number" step="0.01" name="unitCost" required value="${item.unitCost ?? 1200}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div><label class="text-slate-400 block mb-1">Fecha Última Reposición</label><input type="date" name="lastRestockDate" value="${item.lastRestockDate || '2026-11-15'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+            <div class="sm:col-span-2"><label class="text-slate-400 block mb-1">Ubicación Almacén</label><input name="warehouseLoc" value="${item.warehouseLoc || 'Almacén Rig-204 / Estante B'}" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" /></div>
+          </div>
+          ${modalFooterButtons()}
+        `;
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function modalFooterButtons() {
+      return `
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold shadow-lg">Guardar en localStorage</button>
+        </div>
+      `;
+    }
+
+    function closeModal() {
+      document.getElementById('crudModal').classList.add('hidden');
+    }
+
+    function handleModalSubmit(e) {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const data = Object.fromEntries(fd.entries());
+      const { entity, editId } = currentModalContext;
+
+      if (entity === 'asset') {
+        const record = {
+          id: editId || 'AST-' + String(Date.now()).slice(-4),
+          ...data,
+          power: '1200 HP',
+          mawp: '5000 PSI',
+          serial: 'SN-' + String(Date.now()).slice(-5),
+          warranty_end: '2028-01-01',
+          status: 'Operativo',
+          iso_tags: ['ISO 14224', 'ISO 3448', 'ISO 55001']
+        };
+        upsertArray(appState.db.assets, record, editId);
+        populateTaxonomySelectors();
+      } else if (entity === 'cbm') {
+        const assetObj = appState.db.assets.find(a => a.l5_equipment === data.equipment);
+        const record = {
+          id: editId || 'CBM-' + String(Date.now()).slice(-4),
+          assetId: assetObj ? assetObj.id : 'AST-001',
+          ...data,
+          running_hours: Number(data.running_hours),
+          vibration_rms: Number(data.vibration_rms),
+          bearing_temp: Number(data.bearing_temp),
+          oil_temp: Number(data.oil_temp),
+          suction_psi: Number(data.suction_psi),
+          discharge_psi: Number(data.discharge_psi),
+          iso_tags: ['ISO 20816', 'ISO 4406']
+        };
+        upsertArray(appState.db.cbmReadings, record, editId);
+      } else if (entity === 'workorder') {
+        const assetObj = appState.db.assets.find(a => a.l5_equipment === data.equipment);
+        const record = {
+          id: editId || 'OT-2026-' + String(Date.now()).slice(-4),
+          assetId: assetObj ? assetObj.id : 'AST-001',
+          priority: '1 - Crítica',
+          ...data,
+          logisticWaitHours: Number(data.logisticWaitHours),
+          operatingTimeBeforeFailure: Number(data.operatingTimeBeforeFailure),
+          costUsd: Number(data.costUsd),
+          iso_tags: ['ISO 14224', 'ISO 13306']
+        };
+        upsertArray(appState.db.workOrders, record, editId);
+      } else if (entity === 'metrology') {
+        const record = {
+          id: editId || 'MET-' + String(Date.now()).slice(-4),
+          ...data,
+          labName: 'MetroLab Acreditado ISO 17025',
+          status: 'Calibrado',
+          iso_tags: ['ISO/IEC 17025']
+        };
+        upsertArray(appState.db.metrology, record, editId);
+      } else if (entity === 'barrier') {
+        const record = {
+          id: editId || 'WBE-' + String(Date.now()).slice(-4),
+          ...data,
+          auditDemerits: Number(data.auditDemerits),
+          trirIndex: 0.15,
+          iso_tags: ['ISO 16530-1']
+        };
+        upsertArray(appState.db.barriers, record, editId);
+      } else if (entity === 'inventory') {
+        const record = {
+          id: editId || 'INV-' + String(Date.now()).slice(-4),
+          equipment: 'P-101A Bomba Triplex de Lodo',
+          ...data,
+          currentStock: Number(data.currentStock),
+          minStock: Number(data.minStock),
+          reorderPoint: Number(data.minStock) + 1,
+          unitCost: Number(data.unitCost),
+          iso_tags: ['ISO 55001']
+        };
+        upsertArray(appState.db.inventory, record, editId);
+      }
+
+      saveDatabase(true);
+      closeModal();
+      renderAll();
+    }
+
+    function upsertArray(arr, record, editId) {
+      if (editId) {
+        const idx = arr.findIndex(x => x.id === editId);
+        if (idx !== -1) arr[idx] = { ...arr[idx], ...record };
+      } else {
+        arr.unshift(record);
+      }
+    }
+
+    function deleteRecord(collectionName, id) {
+      openConfirm('Eliminar Registro', `¿Está seguro de eliminar el registro ${id} de la base de datos local?`, () => {
+        appState.db[collectionName] = appState.db[collectionName].filter(item => item.id !== id);
+        saveDatabase(true);
+        populateTaxonomySelectors();
+        renderAll();
+      });
+    }
+
+    // ==================== BACKUP, RESTORE, CSV & RESET ====================
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(appState.db, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cmms_360_iso_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Respaldo JSON descargado exitosamente.', 'success');
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!parsed.assets || !parsed.workOrders || !parsed.dictionary200) {
+            throw new Error('El archivo JSON no tiene la estructura válida de la suite CMMS 360.');
+          }
+          appState.db = parsed;
+          saveDatabase(true);
+          populateTaxonomySelectors();
+          renderAll();
+        } catch (err) {
+          showToast('Error al importar JSON: ' + err.message, 'error');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function exportCSV() {
+      const rows = [
+        ['Var_Num', 'Modulo', 'Nombre_Variable', 'Valor', 'Unidad', 'Norma_ISO', 'Referencia', 'Fecha_Actualizacion']
+      ];
+      appState.db.dictionary200.forEach(v => {
+        rows.push([v.varNum, `"${v.moduleName}"`, `"${v.name}"`, `"${v.value}"`, `"${v.unit}"`, `"${v.isoStandard}"`, `"${v.assetRef}"`, v.updatedAt]);
+      });
+      const csvContent = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `diccionario_200_variables_iso_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Reporte CSV de 200 variables exportado.', 'success');
+    }
+
+    function promptResetSeed() {
+      openConfirm(
+        'Restaurar Datos Semilla (Seed Data)',
+        'Se sobrescribirán todos los cambios locales y se restaurarán los datos iniciales de Oil & Gas y las 200 variables.',
+        () => {
+          appState.db = generateSeedData();
+          saveDatabase(true);
+          populateTaxonomySelectors();
+          renderAll();
+        }
+      );
+    }
+
+    // ==================== CUSTOM DIALOG & TOAST SYSTEM ====================
+    let confirmCallback = null;
+    function openConfirm(title, msg, onConfirm) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = msg;
+      confirmCallback = onConfirm;
+      document.getElementById('confirmDialog').classList.remove('hidden');
+    }
+    function closeConfirm() {
+      document.getElementById('confirmDialog').classList.add('hidden');
+      confirmCallback = null;
+    }
+    document.getElementById('confirmActionBtn').addEventListener('click', () => {
+      if (confirmCallback) confirmCallback();
+      closeConfirm();
+    });
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      const colors = type === 'success'
+        ? 'bg-emerald-950 border-emerald-500 text-emerald-200'
+        : type === 'error'
+          ? 'bg-rose-950 border-rose-500 text-rose-200'
+          : 'bg-slate-900 border-sky-500 text-sky-200';
+      el.className = `pointer-events-auto border ${colors} px-4 py-2.5 rounded-xl shadow-2xl text-xs font-semibold flex items-center gap-2 transition-all`;
+      el.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-xmark' : 'fa-circle-info'}"></i><span>${message}</span>`;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    // ==================== MASTER RENDER & INITIALIZATION ====================
+    function renderAll() {
+      renderDashboardView();
+      renderTaxonomyView();
+      renderCbmView();
+      renderWorkOrdersView();
+      renderIsoComplianceView();
+      renderDictionaryView();
+    }
+
+    function updateLiveClock() {
+      const el = document.getElementById('liveClock');
+      if (el) {
+        const now = new Date();
+        el.textContent = now.toLocaleDateString('es-VE') + ' ' + now.toLocaleTimeString('es-VE');
+      }
+    }
+
+    window.onload = function () {
+      loadDatabase();
+      populateTaxonomySelectors();
+      renderAll();
+      updateLiveClock();
+      setInterval(updateLiveClock, 1000);
+    };
+  </script>
+</body>
+</html>
